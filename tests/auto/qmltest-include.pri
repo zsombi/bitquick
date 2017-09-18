@@ -40,8 +40,6 @@ for(TEST, TESTS) {
 
   _check_command = $$_test_command -import $${ROOT_BUILD_DIR}/qml -input $${_PRO_FILE_PWD_} -maxwarnings 5000 -o $${ROOT_BUILD_DIR}/$${TARGET}.xml,xunitxml -o -,txt
 
-  message($$_check_command)
-
   check.commands += $${_check_command}
 
   #add a convenience target per TEST file

@@ -17,22 +17,28 @@
 # <http://www.gnu.org/licenses/>.requires(qtHaveModule(quick))
 #
 # Author: Zsombor Egri <zsombor.egri@bitwelder.fi>
-TEMPLATE = subdirs
 
-requires(qtHaveModule(quick))
-load(qt_parts)
+load(qt_build_config)
+load(qt_functions)
 
-SUBDIRS += doc
+qtPrepareTool(QDOC, qdoc)
 
-#sub_tests.CONFIG -= no_default_target
-#sub_tests.CONFIG -= no_default_install
+# test for Qt's documentation configs
+exists($$[QT_INSTALL_DOCS]/global) {
+    QT_DOC_CONFIG_PATH = $$[QT_INSTALL_DOCS]
+} else {
+    exists($$[QT_INSTALL_PREFIX]/doc/global) {
+        QT_DOC_CONFIG_PATH = $$[QT_INSTALL_PREFIX]/doc
+    }
+}
 
-OTHER_FILES += \
-    .qmake.conf \
-    features/bitquick_do_testing.prf \
-    features/bitquick_common.prf \
-    features/bitquick_qt_module.prf \
-    features/bitquick_qml_plugin.prf \
-    features/bitquick_qml_module.prf \
-    features/bitquick_docs.prf \
-    sync.profile
+#CONFIG_FILE = $$shadowed($$_PRO_FILE_PWD_)
+
+generate_docs.commands = \
+    QT_INSTALL_DOCS=$$QT_DOC_CONFIG_PATH \
+    QT_VERSION_TAG=2 \
+    QT_VER=5.9 \
+    QT_VERSION=5.9.2 \
+    BUILDDIR=$${ROOT_BUILD_DIR} \
+    SRCDIR=$${ROOT_SOURCE_DIR} \
+    $$QDOC $$_PRO_FILE_PWD_/configure.qdocconf

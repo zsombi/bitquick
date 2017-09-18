@@ -25,10 +25,14 @@ import QtTest 1.2
 import BitQuick.Test 1.0
 
 /*!
- * \qmltype BitTestCase
- * \instantiates TestCase
- * \inqmlmodule BitQuick.Test 1.0
- * \brief Extends QtQuick TestCase with additional functions.
+    \qmltype BitTestCase
+    \ingroup bitquick_test
+    \inqmlmodule BitQuick.Test 1.0
+    \brief Extends QtQuick TestCase with additional functions.
+
+    BitTestCase is a QML element which expands the standard QtQuick.TestCase element
+    with additional test functions. In order to benefit fo those functions, simply
+    replace tour TestCase elemenst in your unit tests with BitTestCase.
  */
 TestCase {
 
@@ -40,17 +44,17 @@ TestCase {
     }
 
     /*!
-     * Locates a child of \aobject with \a objectName. Looks for both visible and
-     * invisible children.
+        Locates a child of \a object with \a objectName. Looks for both visible and
+        invisible children.
      */
     function findChild(object, objectName) {
         return bitUtil.findChild(object, objectName);
     }
 
     /*!
-     * Keeps executing an argument-less \a lambda until the \a expected result or
-     * the \a timeout is reached. On failure the \a message will be printed, and
-     * an exception will be thrown.
+        Keeps executing an argument-less \a lambda until the \a expected result or
+        the \a timeout is reached. On failure the \a message will be printed, and
+        an exception will be thrown.
      */
     function tryCompareLambda(lambda, expected, timeout, message) {
         var elapsed = 0;

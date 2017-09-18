@@ -1,0 +1,52 @@
+include($QT_INSTALL_DOCS/global/qt-module-defaults.qdocconf)
+
+defines = Q_QDOC
+
+sources.fileextensions  = "*.qml *.qdoc *.cpp *.js"
+headers.fileextensions  = "*.h"
+
+outputdir               = $BUILDDIR/html
+outputformats           = HTML
+version                 = 1.0
+syntaxhighlighting      = true
+sourceencoding          = UTF-8
+outputencoding          = UTF-8
+
+HTML.templatedir        = .
+HTML.endheader          = "</head>\n"
+HTML.nobreadcrumbs      = false
+HTML.stylesheets        = $QT_INSTALL_DOCS/global/template/style/offline.css \
+                          $QT_INSTALL_DOCS/global/template/style/gsc.css
+HTML.headerstyles       = \
+  "<link rel=\"stylesheet\" type=\"text/css\" href=\"style/offline.css\" />\n" \
+  "<link rel=\"stylesheet\" type=\"text/css\" href=\"style/gsc.css\" />\n"
+
+HTML.footer = \
+    "</div></div>\n" \
+    "<footer>&copy; 2017 <a href=\"http://bitwelder.fi\">bitWelder Oy</a> - All Rights Reserved.</footer>"
+
+# C++ stuff
+include($QT_INSTALL_DOCS/global/qt-cpp-defines.qdocconf)
+
+
+# project stuff
+project                 = BitQuick
+description             = bitWelder's Qt Quick extension plugin documentation
+
+sourcedirs              = $SRCDIR/doc \
+                          $SRCDIR/src/imports/Test \
+                          $SRCDIR/src/BitQuickModule
+
+
+headerdirs              = $SRCDIR/src/imports/Test \
+                          $SRCDIR/src/BitQuickModule
+
+HTML.postheader = \
+    "<header>\n" \
+    "  <a href=\"bitquick.html\">bitWelder's Qt Quick extension plugin API</a>" \
+    "	\n" \
+    "	</header>\n" \
+    "   <div class=\"wrapper\">\n" \
+    "   <div class=\"main-content\">\n"
+
+Cpp.ignoretokens += BITQUICK_EXPORT
