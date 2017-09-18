@@ -1,0 +1,58 @@
+# BitQuick - a QtQuick utility library
+#
+# Copyright (C) 2017  bitWelder Ltd
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see
+# <http://www.gnu.org/licenses/>.requires(qtHaveModule(quick))
+#
+# Author: Zsombor Egri <zsombor.egri@bitwelder.fi>
+
+!qt_submodule_build:!debian_build {
+    gcc:!clang {
+        QMAKE_CFLAGS = -fstack-protector
+        QMAKE_CXXFLAGS = -fstack-protector
+        QMAKE_CXXFLAGS_WARN_ON += -Wdate-time -Wformat -Werror=format-security
+        QMAKE_LFLAGS_SHLIB += -Wl,-z,relro
+        DEFINES += _FORTIFY_SOURCE=2
+        unix:!contains(QT_CONFIG, reduce_relocations): CONFIG += bsymbolic_functions
+    } else {
+        QMAKE_CFLAGS =
+        QMAKE_CXXFLAGS =
+    }
+    QMAKE_LFLAGS =
+}
+
+# Warn about overriding virtual functions not marked with the override keyword.
+gcc:!clang {
+    # Breaks the build when built as a Qt submodule. Should be fixed in Qt 5.6,
+    # see https://codereview.qt-project.org/#/c/169969/
+    !qt_submodule_build:!lessThan(QT_GCC_MAJOR_VERSION, 5): \
+        QMAKE_CXXFLAGS_WARN_ON += -Wsuggest-override
+} else {
+    greaterThan(QT_CLANG_MAJOR_VERSION, 3)| \
+        if(equals(QT_CLANG_MAJOR_VERSION, 3):!lessThan(QT_CLANG_MINOR_VERSION, 6)): \
+            QMAKE_CXXFLAGS_WARN_ON += -Winconsistent-missing-override
+}
+
+# Use the 2011 ISO C++ standard plus amendments. Since Qt 5.6, GNU extensions
+# are enabled by default with Clang, GCC and ICC, strict_c++ disables them.
+CONFIG += c++11
+greaterThan(QT_MAJOR_VERSION, 5)| \
+    if(equals(QT_MAJOR_VERSION, 5):!lessThan(QT_MINOR_VERSION, 6)): \
+        CONFIG += strict_c++
+
+CONFIG += no_keywords
+
+# Make all warnings into errors.
+CONFIG += warnings_are_errors

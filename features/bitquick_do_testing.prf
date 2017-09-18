@@ -1,0 +1,38 @@
+# BitQuick - a QtQuick utility library
+#
+# Copyright (C) 2017  bitWelder Ltd
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see
+# <http://www.gnu.org/licenses/>.requires(qtHaveModule(quick))
+#
+# Author: Zsombor Egri <zsombor.egri@bitwelder.fi>
+
+instbase = $$ROOT_BUILD_DIR/qml
+
+!qt_submodule_build {
+    # These bizarre rules copy the files to the build directory
+
+    defineReplace(qmlModStripSrcDir) {
+        return($$relative_path($$1, $$_PRO_FILE_PWD_))
+    }
+
+    bitquickqmlfiles2build.input = fq_qml_files
+    bitquickqmlfiles2build.output = $$instbase/$$TARGETPATH/${QMAKE_FUNC_FILE_IN_qmlModStripSrcDir}
+    !contains(TEMPLATE, vc.*): bitquickqmlfiles2build.variable_out = PRE_TARGETDEPS
+    bitquickqmlfiles2build.commands = $$QMAKE_COPY ${QMAKE_FILE_IN} ${QMAKE_FILE_OUT}
+    bitquickqmlfiles2build.name = COPY ${QMAKE_FILE_IN}
+    bitquickqmlfiles2build.CONFIG = no_link no_clean
+
+    QMAKE_EXTRA_COMPILERS += bitquickqmlfiles2build
+}

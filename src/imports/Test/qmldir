@@ -1,0 +1,4 @@
+module BitQuick.Test
+plugin BitQuickTest
+
+BitTestCase 1.0 BitTestCase.qml

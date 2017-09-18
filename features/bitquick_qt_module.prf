@@ -1,0 +1,43 @@
+# BitQuick - a QtQuick utility library
+#
+# Copyright (C) 2017  bitWelder Ltd
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see
+# <http://www.gnu.org/licenses/>.requires(qtHaveModule(quick))
+#
+# Author: Zsombor Egri <zsombor.egri@bitwelder.fi>
+
+load(bitquick_common)
+
+# Enables the copy of private and public headers to an include directory at the
+# root of the sources before compilation and the copy of the compiled libraries
+# after compilation. Must be set before loading qt_module.
+CONFIG += git_build
+
+# Make sure our public headers compile with extra warnings and strict Qt
+# options. Must be set before loading qt_module. Requires qt_module_headers to
+# be loaded after qt_module.
+CONFIG += headersclean
+
+load(qt_module)
+load(qt_module_headers)
+
+# Disable CMake config file creation. Must be set after loading qt_module.
+CONFIG -= create_cmake
+
+CONFIG += dll
+
+# warnings_are_errors depending on the compiler version, sometimes it doesn't
+# add the required flags (for instance for recent clang version on old Qt).
+!contains(QMAKE_CXXFLAGS_WARN_ON, -Werror): QMAKE_CXXFLAGS_WARN_ON += -Werror
