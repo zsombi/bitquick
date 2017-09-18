@@ -23,9 +23,23 @@
 #include "testplugin.h"
 #include "bitquicktest.h"
 #include <QtQml/qqml.h>
+#include <QtCore/QDebug>
+
+static void initResources()
+{
+    Q_INIT_RESOURCE(bittest);
+}
+
+TestPlugin::TestPlugin(QObject *parent)
+    : QQmlExtensionPlugin(parent)
+{
+    initResources();
+}
 
 void TestPlugin::registerTypes(const char *uri)
 {
     Q_UNUSED(uri);
     qmlRegisterType<BitQuickTest>(uri, 1, 0, "BitQuickTest");
+
+    qmlRegisterType(QStringLiteral("qrc:/BitTestCase.qml"), uri, 1, 0, "BitTestCase");
 }

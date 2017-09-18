@@ -27,6 +27,9 @@ QT += qml
 
 include(plugin/plugin.pri)
 
-QML_FILES += BitTestCase.qml
+DISTFILES += BitTestCase.qml
 
 load(bitquick_qml_plugin)
+
+RESOURCES += \
+    bittest.qrc
