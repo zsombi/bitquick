@@ -35,11 +35,11 @@ description             = bitWelder's Qt Quick extension plugin documentation
 
 sourcedirs              = $SRCDIR/doc \
                           $SRCDIR/src/imports/Test \
-                          $SRCDIR/src/BitQuickModule
+                          $SRCDIR/src/BitQuick
 
 
 headerdirs              = $SRCDIR/src/imports/Test \
-                          $SRCDIR/src/BitQuickModule
+                          $SRCDIR/src/BitQuick
 
 HTML.postheader = \
     "<header>\n" \

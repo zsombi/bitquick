@@ -55,9 +55,6 @@ load(bitquick_do_testing)
     importpath.value += $$shell_path($$instbase)
     importpath.value = $$unique(importpath.value)
 
-    membackend.name = ALARM_BACKEND
-    membackend.value = memory
-
     #make sure qmlplugindump finds all libs
     ld_lib_path.name  = LD_LIBRARY_PATH
     ld_lib_path.value =
@@ -70,7 +67,6 @@ load(bitquick_do_testing)
 
 
     QMLPLUGINDUMP_ENV_VARS = importpath \
-                             membackend \
                              ld_lib_path
 
     qtAddToolEnv(QMLPLUGINDUMP, $$QMLPLUGINDUMP_ENV_VARS)
@@ -96,3 +92,33 @@ load(bitquick_do_testing)
 # warnings_are_errors depending on the compiler version, sometimes it doesn't
 # add the required flags (for instance for recent clang version on old Qt).
 !contains(QMAKE_CXXFLAGS_WARN_ON, -Werror): QMAKE_CXXFLAGS_WARN_ON += -Werror
+
+# add target resource file unles configured not to
+!contains(CONFIG, no_quick_resources) {
+    # generate a qrc file with all QML and JS files and add to resources
+    # the files must be specified in QML_FILES and JS_FILES respectively
+    for (_file, QML_FILES) {
+        _RESOURCES += '<file alias=\"$${_file}\">'$$_PRO_FILE_PWD_/$${_file}</file>
+    }
+    for (_file, JS_FILES) {
+        _RESOURCES += '<file alias=\"$${_file}\">'$$_PRO_FILE_PWD_/$${_file}</file>
+    }
+    # set the prefix
+    isEmpty(QML_PREFIX): QML_PREFIX="/"
+    !isEmpty(_RESOURCES) {
+        RC = $$join(_RESOURCES, "", '<RCC> <qresource prefix=\"$${QML_PREFIX}\">', </qresource> </RCC>)
+
+        # make sure we do not add multiple resources because of debug targets
+        _RESOURCES_FILE=$${TARGET}_qml
+        _RESOURCES_FILE=$$replace(_RESOURCES_FILE, "_debug", "")
+
+        DEFINES *= MODULE_QUICK_RESOURCES=\\\"$${_RESOURCES_FILE}\\\"
+        QRC_FILE = $$shadowed($$_PRO_FILE_PWD_)/$${_RESOURCES_FILE}.qrc
+        write_file($${QRC_FILE}, RC)
+
+        # finally add the resource file to the system
+        RESOURCES *= $${QRC_FILE}
+    }
+}
+
+DISTFILES += QML_FILES JS_FILES

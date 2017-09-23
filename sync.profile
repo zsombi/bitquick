@@ -19,7 +19,7 @@
 # Author: Zsombor Egri <zsombor.egri@bitwelder.fi>
 
 %modules = ( # path to module name map
-#    "BitQuickModule" => "$basedir/src/BitQuickModule",
+    "BitQuick" => "$basedir/src/BitQuick",
 );
 %moduleheaders = ( # restrict the module headers to those found in relative path
 );
@@ -27,6 +27,8 @@
 %classnames = (
  #add classnames that are not automatically detected
  #e.g. "someheader.h" => "SomeType"
+ "bitquickglobals.h" => "BitQuickGlobals",
+ "bitquicktoolsmodule.h" => "BitQuickToolsModule",
 );
 
 # Module dependencies.

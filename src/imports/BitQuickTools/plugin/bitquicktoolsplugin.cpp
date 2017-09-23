@@ -20,25 +20,29 @@
  * Author: Zsombor Egri <zsombor.egri@bitwelder.fi>
  */
 
-#include "testplugin.h"
-#include "bitquicktest.h"
-#include <QtQml/qqml.h>
-#include <QtCore/QDebug>
+#include "bitquicktoolsplugin.h"
+#include <BitQuick/BitQuickToolsModule>
 
-TestPlugin::TestPlugin(QObject *parent)
+namespace BitQuick {
+
+BitQuickToolsPlugin::BitQuickToolsPlugin(QObject *parent)
     : QQmlExtensionPlugin(parent)
 {
-    Q_INIT_RESOURCE(BitQuickTest_qml);
-}
-TestPlugin::~TestPlugin()
-{
-    Q_CLEANUP_RESOURCE(BitQuickTest_qml);
 }
 
-void TestPlugin::registerTypes(const char *uri)
+BitQuickToolsPlugin::~BitQuickToolsPlugin()
 {
-    Q_UNUSED(uri);
-    qmlRegisterType<BitQuickTest>(uri, 1, 0, "BitQuickTest");
-
-    qmlRegisterType(QStringLiteral("qrc:/BitTestCase.qml"), uri, 1, 0, "BitTestCase");
+    BitQuickToolsModule::undefineModule();
 }
+
+void BitQuickToolsPlugin::registerTypes(const char *uri)
+{
+    BitQuickToolsModule::registerTypes(uri);
+}
+void BitQuickToolsPlugin::initializeEngine(QQmlEngine *engine, const char *uri)
+{
+    QQmlExtensionPlugin::initializeEngine(engine, uri);
+    BitQuickToolsModule::defineModule(engine, uri);
+}
+
+} // namespace BitQuick

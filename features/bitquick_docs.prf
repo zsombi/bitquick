@@ -32,8 +32,6 @@ exists($$[QT_INSTALL_DOCS]/global) {
     }
 }
 
-#CONFIG_FILE = $$shadowed($$_PRO_FILE_PWD_)
-
 generate_docs.commands = \
     QT_INSTALL_DOCS=$$QT_DOC_CONFIG_PATH \
     QT_VERSION_TAG=2 \

@@ -24,8 +24,9 @@ load(qt_parts)
 
 SUBDIRS += doc
 
-#sub_tests.CONFIG -= no_default_target
-#sub_tests.CONFIG -= no_default_install
+sub_tests.CONFIG -= no_default_target
+sub_tests.CONFIG -= no_default_install
+sub_tests.depends = sub_src
 
 OTHER_FILES += \
     .qmake.conf \

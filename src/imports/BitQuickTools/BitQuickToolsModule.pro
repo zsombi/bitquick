@@ -18,15 +18,26 @@
 #
 # Author: Zsombor Egri <zsombor.egri@bitwelder.fi>
 
-CXX_MODULE = qml
-TARGET = BitQuickTest
-TARGETPATH = BitQuick/Test
-IMPORT_VERSION = 1.0
+TEMPLATE = aux
+CONFIG += bitquick_qml_module
 
-QT += qml
+uri = BitQuick.Tools
+installPath = $$[QT_INSTALL_QML]/$$replace(uri, \\., /)
 
-include(plugin/plugin.pri)
+# qmldir
+QMLDIR_FILE = qmldir
 
-QML_FILES += BitTestCase.qml
+# define deployment for found deployables
+qmldir_file.installPath = $$installPath
+qmldir_file.files = $$QMLDIR_FILE
 
-load(bitquick_qml_plugin)
+BITQUICK_QML_MODULE_FILES += qmldir_file
+
+plugins_qmltypes.path = $$installPath
+plugins_qmltypes.files = plugins.qmltypes
+# Silence spam on stderr due to fonts
+# https://bugs.launchpad.net/ubuntu-ui-toolkit/+bug/1256999
+# https://bugreports.qt-project.org/browse/QTBUG-36243
+plugins_qmltypes.extra = $$[QT_INSTALL_BINS]/qmlplugindump -notrelocatable BitQuick.Tools 1.0 ../../ 2>/dev/null > $(INSTALL_ROOT)/$$installPath/plugins.qmltypes
+
+INSTALLS += plugins_qmltypes

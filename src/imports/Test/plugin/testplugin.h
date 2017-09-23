@@ -30,6 +30,7 @@ class TestPlugin : public QQmlExtensionPlugin
     Q_PLUGIN_METADATA(IID "org.qt-project.Qt.QQmlExtensionInterface")
 public:
     explicit TestPlugin(QObject *parent = nullptr);
+    ~TestPlugin();
     void registerTypes(const char *uri) override;
 };
 

@@ -20,25 +20,15 @@
  * Author: Zsombor Egri <zsombor.egri@bitwelder.fi>
  */
 
-#include "testplugin.h"
-#include "bitquicktest.h"
-#include <QtQml/qqml.h>
-#include <QtCore/QDebug>
+#ifndef BITQUICKGLOBALS_H
+#define BITQUICKGLOBALS_H
 
-TestPlugin::TestPlugin(QObject *parent)
-    : QQmlExtensionPlugin(parent)
-{
-    Q_INIT_RESOURCE(BitQuickTest_qml);
-}
-TestPlugin::~TestPlugin()
-{
-    Q_CLEANUP_RESOURCE(BitQuickTest_qml);
-}
+#include <QtCore/QtGlobal>
 
-void TestPlugin::registerTypes(const char *uri)
-{
-    Q_UNUSED(uri);
-    qmlRegisterType<BitQuickTest>(uri, 1, 0, "BitQuickTest");
+#if defined(BITQUICK_LIBRARY)
+#  define BITQUICK_EXPORT Q_DECL_EXPORT
+#else
+#  define BITQUICK_EXPORT Q_DECL_IMPORT
+#endif
 
-    qmlRegisterType(QStringLiteral("qrc:/BitTestCase.qml"), uri, 1, 0, "BitTestCase");
-}
+#endif // BITQUICKGLOBALS_H

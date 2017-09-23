@@ -18,15 +18,15 @@
 #
 # Author: Zsombor Egri <zsombor.egri@bitwelder.fi>
 
-CXX_MODULE = qml
-TARGET = BitQuickTest
-TARGETPATH = BitQuick/Test
-IMPORT_VERSION = 1.0
+QT += qml quick BitQuick
 
-QT += qml
+DEFINES += BITQUICK_QML_IMPORT_PATH='\\"$${ROOT_BUILD_DIR}/qml\\"'
 
-include(plugin/plugin.pri)
+TARGET=$$qtLibraryTarget($$TARGET)
+URI=BitQuick.Tools
 
-QML_FILES += BitTestCase.qml
+HEADERS += \
+    $$PWD/bitquicktoolsplugin.h
 
-load(bitquick_qml_plugin)
+SOURCES += \
+    $$PWD/bitquicktoolsplugin.cpp

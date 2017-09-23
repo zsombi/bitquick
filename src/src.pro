@@ -21,8 +21,16 @@
 TEMPLATE = subdirs
 
 # libraries
+src_bitquick.subdir = BitQuick
+SUBDIRS += src_bitquick
 
 #modules
 src_test_module.subdir = imports/Test
 src_test_module.module = sub-test-module
+src_test_module.depends = src_bitquick_tools
 SUBDIRS += src_test_module
+
+src_bitquick_tools.subdir = imports/BitQuickTools
+src_bitquick_tools.module = sub-bitquicktools-module
+src_bitquick_tools.depends = src_bitquick
+SUBDIRS += src_bitquick_tools
