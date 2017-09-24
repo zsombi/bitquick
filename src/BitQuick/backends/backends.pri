@@ -18,28 +18,8 @@
 #
 # Author: Zsombor Egri <zsombor.egri@bitwelder.fi>
 
-TARGET=BitQuick
-TEMPLATE=lib
-VERSION = 0.1.0
-
-QT += core-private qml quick qml-private quick-private
-
-CONFIG += hide_symbols
-
-DESTDIR = $${ROOT_LIBS_PATH}
-
-DEFINES += BITQUICK_LIBRARY
-
-include(backends/backends.pri)
-
 HEADERS += \
-    bitquickglobals.h \
-    bitquicktoolsmodule.h \
-    statesaver_p.h \
-    statesaver_p_p.h
+    $$PWD/propertysaver_p.h
 
 SOURCES += \
-    bitquicktoolsmodule.cpp \
-    statesaver.cpp
-
-load(bitquick_qt_module)
+    $$PWD/propertysaver.cpp

@@ -20,30 +20,31 @@
  * Author: Zsombor Egri <zsombor.egri@bitwelder.fi>
  */
 
-#include <QtQml/qqml.h>
-#include "bitquicktoolsmodule.h"
-#include "statesaver_p.h"
+import QtQuick 2.8
+import BitQuick.Test 1.0
+import BitQuick.Tools 1.0
 
-namespace BitQuick {
+Item {
+    id: main
+    width: 100
+    height: 100
 
-BitQuickToolsModule::BitQuickToolsModule()
-{
+    Loader {
+        id: loader
+    }
+
+    BitTestCase {
+        name: "StateSaver/1.0"
+
+        function cleanup() {
+            loader.source = "";
+            tryCompare(loader, "status", Loader.Null, 1000, "");
+        }
+
+        function test_noid() {
+            ignoreFormattedWarning("NoID.qml", 26, 1, "Warning: attachee must have an ID in order to save property states.");
+            loader.source = "NoID.qml";
+            tryCompare(loader, "status", Loader.Ready, 1000, "file not found");
+        }
+    }
 }
-
-void BitQuickToolsModule::defineModule(QQmlEngine *engine, const char *uri)
-{
-    Q_UNUSED(engine);
-    Q_UNUSED(uri);
-}
-
-void BitQuickToolsModule::registerTypes(const char *uri)
-{
-    qmlRegisterType<Tools::StateSaver>(uri, 1, 0, "StateSaver");
-    qmlRegisterType<Tools::StateSaverAttached>();
-}
-
-void BitQuickToolsModule::undefineModule()
-{
-}
-
-} // namespace BitQuick

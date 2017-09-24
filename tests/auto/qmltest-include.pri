@@ -26,6 +26,8 @@ CONFIG += no_keywords
 # adds a 'make install' that installs the test cases, which we do not want.
 # Instead add a 'make check' manually.
 
+message(Tests: $$TESTS)
+
 check.target = check
 check.commands = "set -e;"
 check.commands += "export QML2_IMPORT_PATH=$${ROOT_BUILD_DIR}/qml;"
@@ -38,9 +40,9 @@ for(TEST, TESTS) {
     _test_command = $$shadowed($$_PRO_FILE_PWD_)/$${TARGET}
   }
 
-  _check_command = $$_test_command -import $${ROOT_BUILD_DIR}/qml -input $${_PRO_FILE_PWD_} -maxwarnings 5000 -o $${ROOT_BUILD_DIR}/$${TARGET}.xml,xunitxml -o -,txt
+  _check_command = $$_test_command -import $${ROOT_BUILD_DIR}/qml -input $${_PRO_FILE_PWD_}/$${TEST} -maxwarnings 5000 -o $${ROOT_BUILD_DIR}/$${TEST}.xml,xunitxml -o -,txt
 
-  check.commands += $${_check_command}
+  check.commands += $${_check_command} ";"
 
   #add a convenience target per TEST file
   check_name = "check_$${TEST}"

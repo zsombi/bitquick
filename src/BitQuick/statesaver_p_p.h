@@ -20,30 +20,42 @@
  * Author: Zsombor Egri <zsombor.egri@bitwelder.fi>
  */
 
-#include <QtQml/qqml.h>
-#include "bitquicktoolsmodule.h"
+#ifndef STATESAVER_P_P_H
+#define STATESAVER_P_P_H
+
 #include "statesaver_p.h"
+#include <QtCore/private/qobject_p.h>
 
-namespace BitQuick {
+namespace BitQuick { namespace Tools {
 
-BitQuickToolsModule::BitQuickToolsModule()
+class StateSaverAttachedPrivate : public QObjectPrivate
 {
-}
+    Q_DECLARE_PUBLIC(StateSaverAttached)
 
-void BitQuickToolsModule::defineModule(QQmlEngine *engine, const char *uri)
-{
-    Q_UNUSED(engine);
-    Q_UNUSED(uri);
-}
+public:
+    StateSaverAttachedPrivate();
 
-void BitQuickToolsModule::registerTypes(const char *uri)
-{
-    qmlRegisterType<Tools::StateSaver>(uri, 1, 0, "StateSaver");
-    qmlRegisterType<Tools::StateSaverAttached>();
-}
+    bool isEnabled() const;
+    void setEnabled(bool enabled);
+    QString properties() const;
+    void setProperties(const QString &properties);
 
-void BitQuickToolsModule::undefineModule()
-{
-}
+    // functions
+    void init();
+    bool buildUUId();
+    void onCompleted();
+    void save();
+    void restore();
+    void toggleAutoSave();
 
-} // namespace BitQuick
+    // members
+    QStringList propertyList;
+    QString uuid;
+    QMetaObject::Connection *autoSaveConnection{nullptr};
+    bool enabled:1;
+    bool ready:1;
+};
+
+}} // namespace BitQuick::Tools
+
+#endif // STATESAVER_P_P_H

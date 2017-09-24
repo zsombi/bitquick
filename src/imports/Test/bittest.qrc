@@ -1,5 +1,0 @@
-<RCC>
-    <qresource prefix="/">
-        <file>BitTestCase.qml</file>
-    </qresource>
-</RCC>

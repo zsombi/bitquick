@@ -20,30 +20,9 @@
  * Author: Zsombor Egri <zsombor.egri@bitwelder.fi>
  */
 
-#include <QtQml/qqml.h>
-#include "bitquicktoolsmodule.h"
-#include "statesaver_p.h"
+import QtQuick 2.8
+import BitQuick.Tools 1.0
 
-namespace BitQuick {
-
-BitQuickToolsModule::BitQuickToolsModule()
-{
+Item {
+    StateSaver.properties: "width"
 }
-
-void BitQuickToolsModule::defineModule(QQmlEngine *engine, const char *uri)
-{
-    Q_UNUSED(engine);
-    Q_UNUSED(uri);
-}
-
-void BitQuickToolsModule::registerTypes(const char *uri)
-{
-    qmlRegisterType<Tools::StateSaver>(uri, 1, 0, "StateSaver");
-    qmlRegisterType<Tools::StateSaverAttached>();
-}
-
-void BitQuickToolsModule::undefineModule()
-{
-}
-
-} // namespace BitQuick

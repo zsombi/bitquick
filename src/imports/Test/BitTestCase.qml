@@ -61,7 +61,7 @@ TestCase {
         var success = false;
         if (timeout === undefined) {
             timeout = 5000;
-        }
+            }
 
         var result;
         while (elapsed < timeout && !success) {
@@ -76,5 +76,11 @@ TestCase {
         if (!qtest_results.compare(success, message, qtest_results.stringify(result), qtest_results.stringify(expected), util.callerFile(), util.callerLine())) {
             throw new Error("QtQuickTest::fail")
         }
+    }
+
+    function ignoreFormattedWarning(file, line, column, msg) {
+        var f = util.callerFile(0);
+        print(f.slice(0, f.lastIndexOf('/')));
+        ignoreWarning(f.slice(0, f.lastIndexOf('/') + 1) + file + ":" + line + ":" + column + ": QML Item: " + msg);
     }
 }
