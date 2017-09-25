@@ -68,7 +68,6 @@ QString PropertySaver::makeUuid(QObject *object, bool fullPath)
 
     QString id = context->nameForObject(object);
     if (id.isEmpty()) {
-        qmlInfo(object) << QStringLiteral("Warning: attachee must have an ID in order to save property states.");
         return QString();
     }
 

@@ -20,23 +20,12 @@
  * Author: Zsombor Egri <zsombor.egri@bitwelder.fi>
  */
 
-#ifndef BITQUICKGLOBALS_H
-#define BITQUICKGLOBALS_H
+import QtQuick 2.8
+import BitQuick.Tools 1.0
 
-#include <QtCore/QtGlobal>
-
-#if defined(BITQUICK_LIBRARY)
-#  define BITQUICK_EXPORT Q_DECL_EXPORT
-#else
-#  define BITQUICK_EXPORT Q_DECL_IMPORT
-#endif
-
-/*
- * Some Qt version-specific hacks
- */
-#if (QT_VERSION < QT_VERSION_CHECK(5, 9, 0))
-    #include <QtQml/QQmlInfo>
-    #define qmlWarning(object)      qmlInfo(object)
-#endif
-
-#endif // BITQUICKGLOBALS_H
+Item {
+    Item {
+        id: inner
+        StateSaver.properties: "width"
+    }
+}

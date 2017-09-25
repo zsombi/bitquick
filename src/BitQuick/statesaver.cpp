@@ -44,7 +44,7 @@ void StateSaverAttachedPrivate::init()
     Q_ASSERT(qmlContext(parent));
 
     // make sure the current QML engine has a PropertySaver
-    PropertySaver::instance(qmlEngine(parent));
+    backend = PropertySaver::instance(qmlEngine(parent));
 
     // watch for component completion
     QMetaObject::Connection *connection = new QMetaObject::Connection;
@@ -71,13 +71,14 @@ bool StateSaverAttachedPrivate::buildUUId()
     // the first uuid has the full path of the object
     uuid = PropertySaver::makeUuid(parent, true);
     if (uuid.isEmpty()) {
+        qmlWarning(parent) << QStringLiteral("Warning: attachee must have an ID in order to save property states.");
         return false;
     }
     // follow the parents
     for (QObject *pl = parent->parent(); pl; pl = pl->parent()) {
         QString plid = PropertySaver::makeUuid(pl);
         if (plid.isEmpty()) {
-            qmlInfo(pl) << QStringLiteral("Warning: all parents must have an id defined to save the state.");
+            qmlWarning(pl) << QStringLiteral("Warning: all parents must have an id defined to save the state.");
             uuid.clear();
             return false;
         }
@@ -93,25 +94,25 @@ void StateSaverAttachedPrivate::onCompleted()
     if (!buildUUId()) {
         // path error already displayed
         setEnabled(false);
-    } else if (!PropertySaver::instance(qmlEngine(parent))->registerUuid(uuid)) {
-        qmlInfo(parent) << QString(QStringLiteral("Warning: uuid \"%1\" already registered")).arg(uuid);
+    } else if (!backend->registerUuid(uuid)) {
+        qmlWarning(parent) << QStringLiteral("Warning: uuid \"%1\" already registered").arg(uuid);
         setEnabled(false);
+    } else {
+        restore();
     }
-
-    restore();
 }
 
 void StateSaverAttachedPrivate::save()
 {
     if (ready && enabled && !propertyList.isEmpty() && !uuid.isEmpty()) {
-        PropertySaver::instance(qmlEngine(parent))->savePropertiesState(parent, propertyList, uuid);
+        backend->savePropertiesState(parent, propertyList, uuid);
     }
 }
 
 void StateSaverAttachedPrivate::restore()
 {
     if (ready && enabled && !propertyList.isEmpty() && !uuid.isEmpty()) {
-        PropertySaver::instance(qmlEngine(parent))->restorePropertiesState(parent, propertyList, uuid);
+        backend->restorePropertiesState(parent, propertyList, uuid);
     }
 }
 
@@ -126,7 +127,7 @@ void StateSaverAttachedPrivate::toggleAutoSave()
             delete autoSaveConnection;
             autoSaveConnection = nullptr;
         };
-        *autoSaveConnection = QObject::connect(PropertySaver::instance(qmlEngine(parent)), &PropertySaver::saveAndExit,
+        *autoSaveConnection = QObject::connect(backend, &PropertySaver::saveAndExit,
                                                autoSaveSlot);
     } else if (autoSaveConnection) {
         QObject::disconnect(*autoSaveConnection);
@@ -151,7 +152,7 @@ StateSaverAttached::~StateSaverAttached()
 {
     // remove uuid from the property saver
     Q_D(StateSaverAttached);
-    PropertySaver::instance(qmlEngine(parent()))->removeUuid(d->uuid);
+    d->backend->removeUuid(d->uuid);
 }
 
 /*!

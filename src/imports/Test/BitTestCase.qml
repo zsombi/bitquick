@@ -21,7 +21,7 @@
  */
 
 import QtQuick 2.8
-import QtTest 1.2
+import QtTest 1.1
 import BitQuick.Test 1.0
 
 /*!
@@ -78,9 +78,8 @@ TestCase {
         }
     }
 
-    function ignoreFormattedWarning(file, line, column, msg) {
+    function ignoreWarningMessage(file, line, column, msg) {
         var f = util.callerFile(0);
-        print(f.slice(0, f.lastIndexOf('/')));
-        ignoreWarning(f.slice(0, f.lastIndexOf('/') + 1) + file + ":" + line + ":" + column + ": QML Item: " + msg);
+        ignoreWarning(f.substring(0, f.lastIndexOf('/') + 1) + file + ':' + line + ':' + column + ': ' + msg);
     }
 }

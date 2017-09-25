@@ -42,8 +42,14 @@ Item {
         }
 
         function test_noid() {
-            ignoreFormattedWarning("NoID.qml", 26, 1, "Warning: attachee must have an ID in order to save property states.");
+            ignoreWarningMessage("NoID.qml", 26, 1, "QML Item: Warning: attachee must have an ID in order to save property states.");
             loader.source = "NoID.qml";
+            tryCompare(loader, "status", Loader.Ready, 1000, "file not found");
+        }
+
+        function test_no_parent_id() {
+            ignoreWarningMessage("NoParentId.qml", 26, 1, "QML Item: Warning: all parents must have an id defined to save the state.");
+            loader.source = "NoParentId.qml";
             tryCompare(loader, "status", Loader.Ready, 1000, "file not found");
         }
     }
