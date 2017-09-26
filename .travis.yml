@@ -9,10 +9,11 @@ before_install:
 
 install:
   - sudo apt-get install -y qt59base qt59declarative qt59doc 
+  - sudo apt-get install gcc-5 g++5
   
 script:
   - source /opt/*/bin/qt*-env.sh
   - qmake -v
-  - mkdir build ; cd build/
-  - qmake ../bitquick.pro CONFIG+=debug
-  - make || true # make[1]: /opt/qt57/bin/lrelease: Command not found
+  - mkdir ../build ; cd ../build
+  - qmake -r ../bitquick/bitquick.pro CONFIG+=debug
+  - make
