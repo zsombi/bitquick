@@ -21,32 +21,12 @@
  */
 
 import QtQuick 2.9
-import BitQuick.Test 1.0
+import BitQuick.Tools 1.0
 
 Item {
-    id: main
-    width: 100
-    height: 100
-
-    ListView {
-        id: list
-        anchors.fill: parent
-        model: 10
-        delegate: Rectangle {
-            width: parent.width
-            height: 10
-            objectName: "ListItem" + modelData
-            property int itemIndex: index
-        }
-    }
-
-    BitTestCase {
-        name: "BitTestCase"
-
-        function test_findChild() {
-            var item = findChild(main, "ListItem5");
-            verify(item);
-            compare(item.itemIndex, 5);
-        }
+    id: test
+    readonly property Item groupProperty: Item {
+        width: 10
+        StateSaver.properties: "width"
     }
 }

@@ -20,8 +20,8 @@
  * Author: Zsombor Egri <zsombor.egri@bitwelder.fi>
  */
 
-import QtQuick 2.8
-import QtTest 1.1
+import QtQuick 2.9
+import QtTest 1.2
 import BitQuick.Test 1.0
 
 /*!
@@ -52,34 +52,10 @@ TestCase {
     }
 
     /*!
-        Keeps executing an argument-less \a lambda until the \a expected result or
-        the \a timeout is reached. On failure the \a message will be printed, and
-        an exception will be thrown.
+        Ignores a warning \a message on a given \a file, \a line and \a column.
      */
-    function tryCompareLambda(lambda, expected, timeout, message) {
-        var elapsed = 0;
-        var success = false;
-        if (timeout === undefined) {
-            timeout = 5000;
-            }
-
-        var result;
-        while (elapsed < timeout && !success) {
-            result = lambda();
-            success = qtest_compareInternal(result, expected);
-            if (!success) {
-                wait(50);
-                elapsed += 50;
-            }
-        }
-
-        if (!qtest_results.compare(success, message, qtest_results.stringify(result), qtest_results.stringify(expected), util.callerFile(), util.callerLine())) {
-            throw new Error("QtQuickTest::fail")
-        }
-    }
-
-    function ignoreWarningMessage(file, line, column, msg) {
+    function ignoreWarningMessage(file, line, column, message) {
         var f = util.callerFile(0);
-        ignoreWarning(f.substring(0, f.lastIndexOf('/') + 1) + file + ':' + line + ':' + column + ': ' + msg);
+        ignoreWarning(f.substring(0, f.lastIndexOf('/') + 1) + file + ':' + line + ':' + column + ': ' + message);
     }
 }
