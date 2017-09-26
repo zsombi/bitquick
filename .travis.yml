@@ -8,12 +8,11 @@ before_install:
   - sudo apt-get update -qq
 
 install:
-  - sudo apt-get install -y qt59base qt59declarative qt59doc 
-  - sudo apt-get install gcc-5 g++5
+  - sudo apt-get install -y clang llvm qt59base qt59declarative qt59tools 
   
 script:
   - source /opt/*/bin/qt*-env.sh
   - qmake -v
-  - mkdir ../build ; cd ../build
-  - qmake -r ../bitquick/bitquick.pro CONFIG+=debug
+  - pwd && mkdir ../build ; cd ../build
+  - qmake -r -spec linux-clang CONFIG+=debug ../bitquick/bitquick.pro
   - make
