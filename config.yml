@@ -1,0 +1,17 @@
+version: 2.0
+
+dependencies:
+  pre:
+    - sudo apt-add-repository --yes ppa:beineri/opt-qt591-trusty
+    - sudo apt-get update -qq
+    - sudo apt-get install clang llvm qt59base qt59declarative qt59doc
+
+test:
+  override:
+    - source /opt/*/bin/qt*-env.sh
+    - qmake -v
+    - mkdir ../build
+    - cd ../build
+    - qmake -r -spec linux-clang CONFIG+=debug ../bitquick/bitqiuck.pro && make && make docs && make check
+    - cp ./tests/test_*.xml $CIRCLE_TEST_REPORTS
+    - cp -r ./html $CIRCLE_ARTIFACTS/doc
