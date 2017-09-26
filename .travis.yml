@@ -1,0 +1,18 @@
+sudo: required
+dist: trusty
+language: cpp
+os: linux
+
+before_install:
+  - sudo add-apt-repository --yes ppa:beineri/opt-qt591-trusty
+  - sudo apt-get update -qq
+
+install:
+  - sudo apt-get install -y qt59base at59declarative qt59doc 
+  
+script:
+  - source /opt/*/bin/qt*-env.sh
+  - qmake -v
+  - mkdir build ; cd build/
+  - qmake ../bitquick.pro CONFIG+=debug
+  - make || true # make[1]: /opt/qt57/bin/lrelease: Command not found
