@@ -1,5 +1,3 @@
-version: 2.0
-
 dependencies:
   pre:
     - sudo apt-add-repository --yes ppa:beineri/opt-qt591-trusty
