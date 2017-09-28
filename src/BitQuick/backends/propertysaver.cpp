@@ -33,6 +33,8 @@ namespace BitQuick { namespace Tools {
 PropertySaver::PropertySaver(QObject *parent)
     : QObject(parent)
 {
+    // get the application path
+    qDebug() << "STORAGE=" << states.fileName();
 }
 
 PropertySaver::~PropertySaver()
@@ -58,44 +60,36 @@ static QString className(QObject *object)
     return result.left(result.indexOf(QStringLiteral("_QML")));
 }
 
-QString PropertySaver::makeUuid(QObject *object, bool fullPath)
+QString PropertySaver::path(QObject *object)
 {
     QQmlContext *context = qmlContext(object);
-    if (!context) {
-        qWarning() << QStringLiteral("Warning: cannot save properties of a context-less object");
-        return QString();
-    }
-
-    QString id = context->nameForObject(object);
-    if (id.isEmpty()) {
-        return QString();
-    }
+    Q_ASSERT(context);
 
     QQmlContextData *cdata = QQmlContextData::get(context);
-    QUrl url(cdata->url());
+    return cdata->url().toString(QUrl::NormalizePathSegments | QUrl::PreferLocalFile);
+}
+
+// the uuid is of id(className, line, column)[index] format
+QString PropertySaver::makeUuid(QObject *object)
+{
+    QQmlContext *context = qmlContext(object);
+    Q_ASSERT(context);
+
+    QString uuid = context->nameForObject(object);
+    if (uuid.isEmpty()) {
+        return QString();
+    }
     QQmlData *ddata = QQmlData::get(object, false);
-
-    // Use the component's full document path, the line and the column number in junction with the ID
-    // We need all these, as the component id is only unique within the document used
-    // and even the QML document can be the same in two different folders
-    // In case we don't need the full path (i.e. the object is a parent of the
-    // targeted attachee) we use the className
-    QString uuid = fullPath
-            ? url.path().replace(QLatin1Char('/'), QLatin1Char('_'))
-            : className(object);
-
-    uuid += QLatin1Char(':')
-            + QString::number(ddata->lineNumber) + QLatin1Char(':')
-            + QString::number(ddata->columnNumber) + QLatin1Char(':') + id;
+    uuid += QStringLiteral("(%1,%2,%3)").arg(className(object)).arg(ddata->lineNumber).arg(ddata->columnNumber);
 
     // The component may be a delegate in a view. Therefore we need to take the "index"
     // context property into account
     QVariant indexValue = context->contextProperty(QStringLiteral("index"));
     if (indexValue.isValid() && (indexValue.type() == QVariant::Int)) {
-        uuid += indexValue.toString();
+        uuid += QStringLiteral("[%1]").arg(indexValue.toString());
     }
 
-    return uuid;
+    return uuid.prepend(QLatin1Char('/'));
 }
 
 

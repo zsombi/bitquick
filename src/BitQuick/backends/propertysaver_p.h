@@ -27,6 +27,7 @@
 #include <QtCore/QString>
 #include <QtCore/QStringList>
 #include <QtQuick/QQuickItem>
+#include <QtCore/QSettings>
 
 class QQmlEngine;
 
@@ -43,7 +44,8 @@ private:
 public:
     static PropertySaver *instance(QQmlEngine *owner);
 
-    static QString makeUuid(QObject *object, bool fullPath = false);
+    static QString path(QObject *object);
+    static QString makeUuid(QObject *object);
 
     bool registerUuid(const QString &uuid);
     void removeUuid(const QString &uuid);
@@ -52,6 +54,9 @@ public:
 
 Q_SIGNALS:
     void saveAndExit();
+
+private:
+    QSettings states;
 };
 
 }} // namespace BitQuick::Tools

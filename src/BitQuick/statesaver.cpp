@@ -68,8 +68,25 @@ void StateSaverAttachedPrivate::init()
 
 bool StateSaverAttachedPrivate::buildUUId()
 {
+    QQmlContext *context = qmlContext(parent);
+    if (!context) {
+        qWarning() << QStringLiteral("Warning: cannot save properties of a context-less object");
+        return false;
+    }
+
+    // Use the component's full document path, the line and the column number in junction with the ID
+    // We need all these, as the component id is only unique within the document used
+    // and even the QML document can be the same in two different folders
+    // In case we don't need the full path (i.e. the object is a parent of the
+    // targeted attachee) we use the className
+    QString path(PropertySaver::path(parent));
+    if (path.isEmpty()) {
+        qmlWarning(parent) << QStringLiteral("Error retrienving object path");
+        return false;
+    }
+
     // the first uuid has the full path of the object
-    uuid = PropertySaver::makeUuid(parent, true);
+    uuid = PropertySaver::makeUuid(parent);
     if (uuid.isEmpty()) {
         qmlWarning(parent) << QStringLiteral("Warning: attachee must have an ID in order to save property states.");
         return false;
@@ -84,6 +101,8 @@ bool StateSaverAttachedPrivate::buildUUId()
         }
         uuid += plid;
     }
+
+    uuid = uuid.prepend(QLatin1Char(':')).prepend(path);
 
     return true;
 }
