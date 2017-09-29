@@ -42,21 +42,27 @@ private:
     ~PropertySaver();
 
 public:
+    enum ExitReason {
+        NormalShutdown,
+        Deactivated,
+        Interrupted,
+        Terminated
+    };
     static PropertySaver *instance(QQmlEngine *owner);
 
-    static QString path(QObject *object);
-    static QString makeUuid(QObject *object);
-
-    bool registerUuid(const QString &uuid);
-    void removeUuid(const QString &uuid);
     void savePropertiesState(QObject *object, const QStringList &properties, const QString &path);
     void restorePropertiesState(QObject *object, const QStringList &properties, const QString &path);
+    void reset();
 
 Q_SIGNALS:
     void saveAndExit();
 
+private Q_SLOTS:
+    void misuse();
+    void triggerSave(ExitReason reason);
+
 private:
-    QSettings states;
+    QSettings storage;
 };
 
 }} // namespace BitQuick::Tools

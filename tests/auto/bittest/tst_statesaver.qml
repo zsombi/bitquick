@@ -22,6 +22,7 @@
 
 import QtQuick 2.9
 import BitQuick.Test 1.0
+import QtTest 1.2
 import BitQuick.Tools 1.0
 
 Item {
@@ -31,18 +32,34 @@ Item {
 
     Loader {
         id: loader
+        asynchronous: false
     }
 
     Item {
         id: testItem
     }
 
+    StateSaver {
+        Component.onDestruction: reset();
+    }
+
     BitTestCase {
         name: "StateSaver/1.0"
 
+        SignalSpy {
+            id: deadSpy
+            signalName: "destruction"
+        }
+
         function cleanup() {
-            loader.source = "";
-            tryCompare(loader, "status", Loader.Null, 1000, "");
+            if (loader.item) {
+                deadSpy.clear()
+                deadSpy.target = loader.item.Component;
+                loader.source = "";
+                tryCompare(loader, "status", Loader.Null, 1000, "");
+                deadSpy.wait(500);
+            }
+            deadSpy.clear();
         }
 
         function test_noid_data() {
@@ -74,6 +91,7 @@ Item {
                 {tag: "string", property: "stringProperty", value: "BitQuick is really quick"},
                 {tag: "url", property: "urlProperty", value: Qt.resolvedUrl("NoParentId.qml")},
                 {tag: "date", property: "dateProperty", value: new Date(2015, 10, 2)},
+                {tag: "point", property: "pointProperty", value: Qt.point(-10, -20)},
                 {tag: "rect", property: "rectProperty", value: Qt.rect(-10, -20, 50, 80)},
                 {tag: "size", property: "sizeProperty", value: Qt.size(10, 40)},
                 {tag: "color", property: "colorProperty", value: "#00ff00"},
@@ -84,6 +102,7 @@ Item {
                 {tag: "quaternion", property: "quaternionProperty", value: Qt.quaternion(3, 2, 1, 0.5)},
                 {tag: "matrix4x4", property: "matrix4x4Property", value: Qt.matrix4x4(16,15,14,13,12,11,10,9,8,7,6,5,7,3,2,1)},
                 {tag: "group", group: "groupProperty", property: "width", value: 100},
+                {tag: "enum", property: "horizontalAlignment", value: Text.AlignRight},
             ];
         }
         function test_save_supported_values(data) {
@@ -100,10 +119,11 @@ Item {
             }
 
             // unload document, and then reload
+            deadSpy.target = loader.item.Component;
             loader.source = "";
-            tryCompare(loader, "status", Loader.Null, 1000, "weirdo");
+            deadSpy.wait();
             loader.source = "SupportedTypes.qml";
-            tryCompare(loader, "status", Loader.Ready, 1000, "file not found");
+            tryVerify(function () { return loader.item != null}, 1000);
 
             if (data.group) {
                 var grp = loader.item[data.group];
@@ -115,7 +135,7 @@ Item {
 
         function test_unsupported_values_data() {
             return [
-                {tag: "object", property: "object", value: testItem, message: "QML Item: Object type property is not supported"},
+                {tag: "object", property: "object", value: testItem, message: "QML UnsupportedTypes: Warning: cannot save property \"object\" of QObject type."},
             ];
         }
         function test_unsupported_values(data) {
@@ -129,13 +149,16 @@ Item {
             loader.item[data.property] = data.value;
 
             // unload document, and then reload
+            deadSpy.target = loader.item.Component;
             loader.source = "";
-            tryCompare(loader, "status", Loader.Null, 1000, "weirdo");
+            deadSpy.wait();
             loader.source = "UnsupportedTypes.qml";
             tryCompare(loader, "status", Loader.Ready, 1000, "file not found");
 
-            expectFailContinue(0, "the value is not set");
+            expectFailContinue("", "the value is not set");
             compare(loader.item[data.property], data.value);
+            // disable state saver so we don't get the warning message again
+            loader.item.StateSaver.enabled = false;
         }
 
         function test_list_index() {
@@ -147,8 +170,9 @@ Item {
             loader.item.currentIndex = 10;
 
             // unload document, and then reload
+            deadSpy.target = loader.item.Component;
             loader.source = "";
-            tryCompare(loader, "status", Loader.Null, 1000, "weirdo");
+            deadSpy.wait();
             loader.source = "ListIndex.qml";
             tryCompare(loader, "status", Loader.Ready, 1000, "file not found");
 
@@ -166,8 +190,9 @@ Item {
             label.text = "Altered string";
 
             // unload document, and then reload
+            deadSpy.target = loader.item.Component;
             loader.source = "";
-            tryCompare(loader, "status", Loader.Null, 1000, "weirdo");
+            deadSpy.wait();
             loader.source = "ListIndex.qml";
             tryCompare(loader, "status", Loader.Ready, 1000, "file not found");
 
@@ -176,21 +201,32 @@ Item {
         }
 
         function test_disabled() {
-            loader.source = "ListIndex.qml";
+            loader.source = "Disabled.qml";
             tryCompare(loader, "status", Loader.Ready, 1000, "file not found");
 
             var initialValue = loader.item.currentIndex;
-            loader.item.StateSaver.enabled = false;
             loader.item.currentIndex = initialValue + 1;
 
             // unload document, and then reload
+            deadSpy.target = loader.item.Component;
             loader.source = "";
-            tryCompare(loader, "status", Loader.Null, 1000, "weirdo");
-            loader.source = "ListIndex.qml";
+            deadSpy.wait();
+            loader.source = "Disabled.qml";
             tryCompare(loader, "status", Loader.Ready, 1000, "file not found");
 
-            expectFailContinue(0, "index must not be saved");
+            expectFailContinue("", "index must not be saved");
             compare(loader.item.currentIndex, initialValue + 1);
+        }
+
+        function test_readonly_property() {
+            ignoreWarningMessage("Readonly.qml", 26, 1, "QML Readonly: Warning: cannot serialize read-only property \"readOnly\"");
+            loader.source = "Readonly.qml";
+            tryCompare(loader, "status", Loader.Ready, 1000, "file not found");
+
+            // unload document, and then reload
+            deadSpy.target = loader.item.Component;
+            loader.source = "";
+            deadSpy.wait();
         }
     }
 }

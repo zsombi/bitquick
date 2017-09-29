@@ -29,21 +29,11 @@ ListView {
     height: 100
     model: 50
     delegate: Rectangle {
-        id: rect
-        objectName: "Delegate" + index
         width: parent.width
         height: 20
-        Text {
-            id: label
-            objectName: "label" + index
-            anchors.fill: parent
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-            text: "Label #" + index
-            StateSaver.properties: "text"
-        }
     }
 
     StateSaver.properties: "currentIndex"
+    StateSaver.enabled: false
     Component.onCompleted: {}
 }

@@ -21,20 +21,34 @@
  */
 
 #include "propertysaver_p.h"
+#include <QtCore/QVariant>
+#include <QtCore/QMetaType>
+#include <QtCore/QDebug>
+#include <QtGui/QGuiApplication>
 #include <QtQml/QQmlEngine>
 #include <QtQml/QQmlInfo>
-#include <QtCore/QDebug>
-#include <QtQml/private/qqmlcomponentattached_p.h>
-#include <QtQml/private/qqmlcontext_p.h>
-#include <QtQml/private/qqmldata_p.h>
+
+#include <QtQml/private/qqmlproperty_p.h>
 
 namespace BitQuick { namespace Tools {
 
 PropertySaver::PropertySaver(QObject *parent)
     : QObject(parent)
 {
+    storage.setFallbacksEnabled(false);
     // get the application path
-    qDebug() << "STORAGE=" << states.fileName();
+    qDebug() << "STORAGE=" << storage.fileName();
+    connect(QGuiApplication::instance(), &QGuiApplication::aboutToQuit,
+            this, std::bind(&PropertySaver::triggerSave, this, ExitReason::NormalShutdown));
+    // TODO: connect activation and deactivation
+
+    // watch for application name changes to warn about misuse
+    connect(QGuiApplication::instance(), &QGuiApplication::organizationNameChanged,
+            this, &PropertySaver::misuse);
+    connect(QGuiApplication::instance(), &QGuiApplication::applicationNameChanged,
+            this, &PropertySaver::misuse);
+
+    // TODO: watch forced application terminations
 }
 
 PropertySaver::~PropertySaver()
@@ -54,61 +68,36 @@ PropertySaver *PropertySaver::instance(QQmlEngine *owner)
     return inst;
 }
 
-static QString className(QObject *object)
-{
-    QString result = QString::fromLatin1(object->metaObject()->className());
-    return result.left(result.indexOf(QStringLiteral("_QML")));
-}
-
-QString PropertySaver::path(QObject *object)
-{
-    QQmlContext *context = qmlContext(object);
-    Q_ASSERT(context);
-
-    QQmlContextData *cdata = QQmlContextData::get(context);
-    return cdata->url().toString(QUrl::NormalizePathSegments | QUrl::PreferLocalFile);
-}
-
-// the uuid is of id(className, line, column)[index] format
-QString PropertySaver::makeUuid(QObject *object)
-{
-    QQmlContext *context = qmlContext(object);
-    Q_ASSERT(context);
-
-    QString uuid = context->nameForObject(object);
-    if (uuid.isEmpty()) {
-        return QString();
-    }
-    QQmlData *ddata = QQmlData::get(object, false);
-    uuid += QStringLiteral("(%1,%2,%3)").arg(className(object)).arg(ddata->lineNumber).arg(ddata->columnNumber);
-
-    // The component may be a delegate in a view. Therefore we need to take the "index"
-    // context property into account
-    QVariant indexValue = context->contextProperty(QStringLiteral("index"));
-    if (indexValue.isValid() && (indexValue.type() == QVariant::Int)) {
-        uuid += QStringLiteral("[%1]").arg(indexValue.toString());
-    }
-
-    return uuid.prepend(QLatin1Char('/'));
-}
-
-
-bool PropertySaver::registerUuid(const QString &uuid)
-{
-    Q_UNUSED(uuid);
-    return false;
-}
-
-void PropertySaver::removeUuid(const QString &uuid)
-{
-    Q_UNUSED(uuid);
-}
 
 void PropertySaver::savePropertiesState(QObject *object, const QStringList &properties, const QString &path)
 {
     Q_UNUSED(object);
     Q_UNUSED(properties);
     Q_UNUSED(path);
+
+    // each property is saved under a group, where teh group ID is the object path
+    // each property will have a type pair which will contain teh tuype of the property saved
+    storage.beginGroup(path);
+    for (const QString &property : properties) {
+        QQmlProperty qmlProperty(object, property, qmlContext(object));
+        if (!qmlProperty.isValid()) {
+            qmlWarning(object) << QStringLiteral("Warning: invalid property \"%1\"").arg(property);
+            continue;
+        }
+        if (!qmlProperty.isWritable()) {
+            qmlWarning(object) << QStringLiteral("Warning: cannot serialize read-only property \"%1\"").arg(property);
+        }
+        QVariant value = qmlProperty.read();
+        QMetaType::Type type = static_cast<QMetaType::Type>(value.type());
+        if (type == QMetaType::QObjectStar) {
+            qmlWarning(object) << QStringLiteral("Warning: cannot save property \"%1\" of QObject type.").arg(property);
+            continue;
+        }
+        storage.setValue(property, value);
+        storage.setValue(property + QStringLiteral("_TYPE"), QVariant::fromValue(int(type)));
+    }
+    storage.endGroup();
+    storage.sync();
 }
 
 void PropertySaver::restorePropertiesState(QObject *object, const QStringList &properties, const QString &path)
@@ -116,6 +105,51 @@ void PropertySaver::restorePropertiesState(QObject *object, const QStringList &p
     Q_UNUSED(object);
     Q_UNUSED(properties);
     Q_UNUSED(path);
+
+    storage.beginGroup(path);
+    QStringList storedProperties = storage.childKeys();
+    for (const QString &property : storedProperties) {
+        if (!properties.contains(property)) {
+            continue;
+        }
+
+        QQmlProperty qmlProperty(object, property, qmlContext(object));
+        if (qmlProperty.isValid() && qmlProperty.isWritable()) {
+            QVariant type = storage.value(property + QStringLiteral("_TYPE"));
+            QVariant value = storage.value(property);
+            if (!value.convert(type.toInt())) {
+                qmlWarning(object) << QStringLiteral("Different type or type mismatch for property \"%1\"").arg(property);
+                continue;
+            }
+
+            // write to the property without breaking the bindings!
+            if (!QQmlPropertyPrivate::write(qmlProperty, value, QQmlPropertyData::DontRemoveBinding)) {
+                qmlWarning(object) << QStringLiteral("Restoring property \"%1\" error").arg(property);
+            }
+        }
+    }
+    storage.endGroup();
+}
+
+void PropertySaver::reset()
+{
+    storage.clear();
+    storage.sync();
+    QFile::remove(storage.fileName());
+}
+
+/******************************************************************************
+ * private stuff
+ */
+
+void PropertySaver::misuse()
+{
+    qWarning() << QStringLiteral("Warning: Application or organization name change detected after the state saving was initiated. This will cause previously saved states to be omitted!");
+}
+void PropertySaver::triggerSave(ExitReason reason)
+{
+    Q_UNUSED(reason);
+    qDebug() << "EXITING, reason" << reason;
 }
 
 }} // namespace BitQuick::Tools

@@ -25,4 +25,5 @@ import BitQuick.Tools 1.0
 
 Item {
     StateSaver.properties: "width"
+    Component.onCompleted: {}
 }

@@ -54,10 +54,14 @@ class BITQUICK_EXPORT StateSaver : public QObject
     Q_OBJECT
 
 public:
+    StateSaver(QObject *parent = nullptr);
     static StateSaverAttached *qmlAttachedProperties(QObject *owner)
     {
         return new StateSaverAttached(owner);
     }
+
+public Q_SLOTS:
+    void reset();
 };
 
 }} // namespace BitQuick::Tools

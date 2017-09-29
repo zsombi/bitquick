@@ -27,4 +27,5 @@ Item {
     id: test
     property Item object: Item{}
     StateSaver.properties: "object"
+    Component.onCompleted: {}
 }

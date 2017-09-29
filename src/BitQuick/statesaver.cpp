@@ -32,10 +32,35 @@
 
 namespace BitQuick { namespace Tools {
 
+StateSaver::StateSaver(QObject *parent)
+    : QObject(parent)
+{
+}
+
+void StateSaver::reset()
+{
+    PropertySaver::instance(qmlEngine(this))->reset();
+}
+
 StateSaverAttachedPrivate::StateSaverAttachedPrivate()
     : enabled(false)
     , ready(false)
 {
+}
+
+StateSaverAttachedPrivate::~StateSaverAttachedPrivate()
+{
+    // clean the connections, if in an unlikely situation we reach here
+    if (completedConnection) {
+        QObject::disconnect(*completedConnection);
+        delete completedConnection;
+        completedConnection = nullptr;
+    }
+    if (destroyedConnection) {
+        QObject::disconnect(*destroyedConnection);
+        delete destroyedConnection;
+        destroyedConnection = nullptr;
+    }
 }
 
 void StateSaverAttachedPrivate::init()
@@ -47,25 +72,57 @@ void StateSaverAttachedPrivate::init()
     backend = PropertySaver::instance(qmlEngine(parent));
 
     // watch for component completion
-    QMetaObject::Connection *connection = new QMetaObject::Connection;
-    auto completed = [connection, this]() {
-        ready = true;
-
-        // initialize path and properties
-        onCompleted();
-
-        // and disconnect; no need to listen on completion anymore
-        QObject::disconnect(*connection);
-        delete connection;
-    };
     QQmlComponentAttached *attached = QQmlComponent::qmlAttachedProperties(parent);
-    *connection = QObject::connect(attached, &QQmlComponentAttached::completed,
-                                   completed);
+    completedConnection = new QMetaObject::Connection;
+    *completedConnection = QObject::connect(attached, &QQmlComponentAttached::completed,
+                                            std::bind(&StateSaverAttachedPrivate::onCompleted, this));
 
-    // enable it
+    // also for component destruction, as at that phase we may still have the QML context available
+    destroyedConnection = new QMetaObject::Connection;
+    *destroyedConnection = QObject::connect(attached, &QQmlComponentAttached::destruction,
+                                            std::bind(&StateSaverAttachedPrivate::onDestroyed, this));
+
+    // finally enable it
     setEnabled(true);
 }
 
+static QString className(QObject *object)
+{
+    QString result = QString::fromLatin1(object->metaObject()->className());
+    return result.left(result.indexOf(QStringLiteral("_QML")));
+}
+
+static QString objectPath(QObject *object)
+{
+    QQmlContext *context = qmlContext(object);
+    Q_ASSERT(context);
+
+    QQmlContextData *cdata = QQmlContextData::get(context);
+    return cdata->url().toString(QUrl::NormalizePathSegments | QUrl::PreferLocalFile);
+}
+
+// the uuid is of id(className, line, column)[index] format
+static QString makeUuid(QObject *object)
+{
+    QQmlContext *context = qmlContext(object);
+    Q_ASSERT(context);
+
+    QString uuid = context->nameForObject(object);
+    if (uuid.isEmpty()) {
+        return QString();
+    }
+    QQmlData *ddata = QQmlData::get(object, false);
+    uuid += QStringLiteral("(%1,%2,%3)").arg(className(object)).arg(ddata->lineNumber).arg(ddata->columnNumber);
+
+    // The component may be a delegate in a view. Therefore we need to take the "index"
+    // context property into account
+    QVariant indexValue = context->contextProperty(QStringLiteral("index"));
+    if (indexValue.isValid() && (indexValue.type() == QVariant::Int)) {
+        uuid += QStringLiteral("[%1]").arg(indexValue.toString());
+    }
+
+    return uuid.prepend(QLatin1Char('/'));
+}
 bool StateSaverAttachedPrivate::buildUUId()
 {
     QQmlContext *context = qmlContext(parent);
@@ -79,21 +136,21 @@ bool StateSaverAttachedPrivate::buildUUId()
     // and even the QML document can be the same in two different folders
     // In case we don't need the full path (i.e. the object is a parent of the
     // targeted attachee) we use the className
-    QString path(PropertySaver::path(parent));
+    QString path(objectPath(parent));
     if (path.isEmpty()) {
         qmlWarning(parent) << QStringLiteral("Error retrienving object path");
         return false;
     }
 
     // the first uuid has the full path of the object
-    uuid = PropertySaver::makeUuid(parent);
+    uuid = makeUuid(parent);
     if (uuid.isEmpty()) {
         qmlWarning(parent) << QStringLiteral("Warning: attachee must have an ID in order to save property states.");
         return false;
     }
     // follow the parents
     for (QObject *pl = parent->parent(); pl; pl = pl->parent()) {
-        QString plid = PropertySaver::makeUuid(pl);
+        QString plid = makeUuid(pl);
         if (plid.isEmpty()) {
             qmlWarning(pl) << QStringLiteral("Warning: all parents must have an id defined to save the state.");
             uuid.clear();
@@ -109,28 +166,43 @@ bool StateSaverAttachedPrivate::buildUUId()
 
 void StateSaverAttachedPrivate::onCompleted()
 {
+    ready = true;
     // we need to remember the QML component ID path
     if (!buildUUId()) {
         // path error already displayed
         setEnabled(false);
-    } else if (!backend->registerUuid(uuid)) {
-        qmlWarning(parent) << QStringLiteral("Warning: uuid \"%1\" already registered").arg(uuid);
-        setEnabled(false);
     } else {
+        // and then restore the property values
         restore();
     }
+
+    // finally clean connection; no need to listen on completion anymore
+    QObject::disconnect(*completedConnection);
+    delete completedConnection;
+    completedConnection = nullptr;
+}
+
+void StateSaverAttachedPrivate::onDestroyed()
+{
+    save();
+    ready = false;
+
+    // clean connection
+    QObject::disconnect(*destroyedConnection);
+    delete destroyedConnection;
+    destroyedConnection = nullptr;
 }
 
 void StateSaverAttachedPrivate::save()
 {
-    if (ready && enabled && !propertyList.isEmpty() && !uuid.isEmpty()) {
+    if (ready && enabled && !propertyList.isEmpty() && !uuid.isEmpty() && backend) {
         backend->savePropertiesState(parent, propertyList, uuid);
     }
 }
 
 void StateSaverAttachedPrivate::restore()
 {
-    if (ready && enabled && !propertyList.isEmpty() && !uuid.isEmpty()) {
+    if (ready && enabled && !propertyList.isEmpty() && !uuid.isEmpty() && backend) {
         backend->restorePropertiesState(parent, propertyList, uuid);
     }
 }
@@ -160,6 +232,9 @@ void StateSaverAttachedPrivate::toggleAutoSave()
  * \ingroup bitquick_tools
  * \inqmlmodule BitQuick.Tools 1.0
  * \brief Saves the values of the attachee object properties
+ *
+ * TBD
+ * \note Application name and organization must be set before the first state saving happens.
  */
 StateSaverAttached::StateSaverAttached(QObject *parent)
     : QObject(*(new StateSaverAttachedPrivate), parent)
@@ -169,9 +244,6 @@ StateSaverAttached::StateSaverAttached(QObject *parent)
 
 StateSaverAttached::~StateSaverAttached()
 {
-    // remove uuid from the property saver
-    Q_D(StateSaverAttached);
-    d->backend->removeUuid(d->uuid);
 }
 
 /*!

@@ -35,6 +35,7 @@ class StateSaverAttachedPrivate : public QObjectPrivate
 
 public:
     StateSaverAttachedPrivate();
+    ~StateSaverAttachedPrivate();
 
     bool isEnabled() const;
     void setEnabled(bool enabled);
@@ -45,6 +46,7 @@ public:
     void init();
     bool buildUUId();
     void onCompleted();
+    void onDestroyed();
     void save();
     void restore();
     void toggleAutoSave();
@@ -54,6 +56,8 @@ public:
     QStringList propertyList;
     QString uuid;
     QMetaObject::Connection *autoSaveConnection{nullptr};
+    QMetaObject::Connection *completedConnection{nullptr};
+    QMetaObject::Connection *destroyedConnection{nullptr};
     bool enabled:1;
     bool ready:1;
 };

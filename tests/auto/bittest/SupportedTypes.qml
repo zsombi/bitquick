@@ -23,7 +23,7 @@
 import QtQuick 2.9
 import BitQuick.Tools 1.0
 
-Item {
+Text {
     id: test
     property int intProperty: -1
     property bool boolProperty: false
@@ -32,6 +32,7 @@ Item {
     property string stringProperty: "this is a string"
     property url urlProperty: Qt.resolvedUrl("NoID.qml")
     property date dateProperty: new Date();
+    property point pointProperty: Qt.point(10, 20)
     property rect rectProperty: Qt.rect(0, 0, 20, 20)
     property size sizeProperty: Qt.size(20, 30)
     property color colorProperty: "red"
@@ -45,9 +46,14 @@ Item {
         id: grp
         width: 10
     }
+    horizontalAlignment: Text.AlignHCenter
 
     StateSaver.properties: "intProperty, boolProperty, realProperty, doubleProperty, stringProperty, urlProperty,"+
-                           "dateProperty, pointProperty, rectProperty, sizeProperty, timeProperty, colorProperty," +
-                           "fontProperty, vector2dProperty, vector3dProperty, vector4dProperty, quaternionProperty," +
-                           "matrix4x4Property, groupProperty.width"
+                           "dateProperty, pointProperty, rectProperty, sizeProperty, colorProperty, fontProperty," +
+                           "vector2dProperty, vector3dProperty, vector4dProperty, quaternionProperty," +
+                           "matrix4x4Property, groupProperty.width," +
+                           "horizontalAlignment"
+
+    // make sure we have the attached signals so we can wait for its destruction
+    Component.onCompleted: {}
 }

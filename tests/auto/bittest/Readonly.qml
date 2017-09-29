@@ -23,27 +23,9 @@
 import QtQuick 2.9
 import BitQuick.Tools 1.0
 
-ListView {
+Item {
     id: test
-    width: 100
-    height: 100
-    model: 50
-    delegate: Rectangle {
-        id: rect
-        objectName: "Delegate" + index
-        width: parent.width
-        height: 20
-        Text {
-            id: label
-            objectName: "label" + index
-            anchors.fill: parent
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-            text: "Label #" + index
-            StateSaver.properties: "text"
-        }
-    }
-
-    StateSaver.properties: "currentIndex"
+    readonly property int readOnly: 12
+    StateSaver.properties: "readOnly"
     Component.onCompleted: {}
 }

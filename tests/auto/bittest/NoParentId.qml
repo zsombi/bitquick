@@ -28,4 +28,5 @@ Item {
         id: inner
         StateSaver.properties: "width"
     }
+    Component.onCompleted: {}
 }
