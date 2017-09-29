@@ -20,6 +20,7 @@
 
 %modules = ( # path to module name map
     "BitQuick" => "$basedir/src/BitQuick",
+    "BitTestLib" => "$basedir/src/BitTestLib",
 );
 %moduleheaders = ( # restrict the module headers to those found in relative path
 );
@@ -29,6 +30,7 @@
  #e.g. "someheader.h" => "SomeType"
  "bitquickglobals.h" => "BitQuickGlobals",
  "bitquicktoolsmodule.h" => "BitQuickToolsModule",
+# "bittest.h" => "BitTest",
 );
 
 # Module dependencies.

@@ -18,22 +18,22 @@
 #
 # Author: Zsombor Egri <zsombor.egri@bitwelder.fi>
 
-TEMPLATE = subdirs
+TARGET = BitTestLib
+TEMPLATE = lib
+VERSION = 1.0.0
 
-# libraries
-src_bitquick.subdir = BitQuick
-SUBDIRS += src_bitquick
+QT += testlib qml quick
 
-src_bittestlib.subdir = BitTestLib
-SUBDIRS += src_bittestlib
+CONFIG += hide_symbols
 
-#modules
-src_test_module.subdir = imports/Test
-src_test_module.module = sub-test-module
-src_test_module.depends = src_bitquick_tools
-SUBDIRS += src_test_module
+DESTDIR = $${ROOT_LIBS_PATH}
 
-src_bitquick_tools.subdir = imports/BitQuickTools
-src_bitquick_tools.module = sub-bitquicktools-module
-src_bitquick_tools.depends = src_bitquick
-SUBDIRS += src_bitquick_tools
+DEFINES += BITQUICK_LIBRARY
+
+HEADERS += \
+    bittest.h
+
+SOURCES += \
+    bittest.cpp
+
+load(bitquick_qt_module)
