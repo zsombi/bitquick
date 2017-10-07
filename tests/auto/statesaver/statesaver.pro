@@ -17,7 +17,16 @@
 # <http://www.gnu.org/licenses/>
 #
 # Author: Zsombor Egri <zsombor.egri@bitwelder.fi>
-TEMPLATE = subdirs
 
-SUBDIRS += bittest \
-    statesaver
+TEMPLATE = app
+
+DEFINES += TEST_DIR=\\\"$$PWD\\\"
+DEFINES += QT_INSTALL_BINS=\\\"$$[QT_INSTALL_BINS]\\\"
+
+include(../qttest-include.pri)
+
+SOURCES += \
+    main.cpp
+
+DISTFILES += \
+    NormalClose.qml

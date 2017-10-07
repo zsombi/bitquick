@@ -24,7 +24,7 @@ VERSION = 1.0.0
 
 QT += testlib qml quick
 
-CONFIG += hide_symbols
+CONFIG += hide_symbols staticlib
 
 DESTDIR = $${ROOT_LIBS_PATH}
 

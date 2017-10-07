@@ -28,7 +28,7 @@
 
 namespace BitQuick { namespace Tools {
 
-class PropertySaver;
+class StateSaverBackend;
 class StateSaverAttachedPrivate : public QObjectPrivate
 {
     Q_DECLARE_PUBLIC(StateSaverAttached)
@@ -52,7 +52,7 @@ public:
     void toggleAutoSave();
 
     // members
-    QPointer<PropertySaver> backend;
+    QPointer<StateSaverBackend> backend;
     QStringList propertyList;
     QString uuid;
     QMetaObject::Connection *autoSaveConnection{nullptr};

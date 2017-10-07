@@ -21,7 +21,7 @@
  */
 
 #include "statesaver_p_p.h"
-#include "backends/propertysaver_p.h"
+#include "backends/statesaverbackend_p.h"
 
 #include <QtQml/QQmlEngine>
 #include <QtQml/QQmlInfo>
@@ -30,16 +30,71 @@
 #include <QtQml/private/qqmlcontext_p.h>
 #include <QtQml/private/qqmldata_p.h>
 
+#include <QtQml/private/qqmlproperty_p.h>
+
 namespace BitQuick { namespace Tools {
 
+/*!
+ * \qmltype StateSaver
+ * \ingroup bitquick_tools
+ * \inqmlmodule BitQuick.Tools 1.0
+ * \brief Saves the values of the attachee object properties
+ *
+ * TBD
+ * \note Application name and organization must be set before the first state saving happens.
+ */
 StateSaver::StateSaver(QObject *parent)
     : QObject(parent)
 {
 }
 
+/*!
+ * \qmlproperty string StateSaver::applicationName
+ * The property holds the application name. The application name should either be
+ * set in c++ code or as a simple value in QML as it affects the place the storage
+ * file will be stored, which is highly dependent on the application and organization
+ * name. Any further changes on teh application name will be omitted, and an error
+ * will be displayed.
+ */
+QString StateSaver::applicationName() const
+{
+    return QCoreApplication::applicationName();
+}
+void StateSaver::setApplicationName(const QString &name)
+{
+    QCoreApplication::setApplicationName(name);
+    Q_EMIT applicationNameChanged();
+    // make sure we create the statesaver backend instance!
+    StateSaverFactory::instance(qmlEngine(this));
+    qDebug() << "APPNAME=" << name;
+}
+
+/*!
+ * \qmlproperty enumeration StateSaver::lastSaveStatus
+ * \readonly
+ * The property holds the application's last saved saving status, which can be one
+ * of the following:
+ * \list
+ * \li Undefined
+ * \li Normal
+ * \li Deactivated
+ * \li Interrupted
+ * \li Terminated
+ * \endlist
+ */
+StateSaver::SaveStatus StateSaver::lastSaveStatus() const
+{
+    return StateSaverFactory::instance(qmlEngine(this))->SaveStatus();
+}
+
+/*!
+ * \qmlmethod void StateSaver::reset()
+ * The method resets the state saver storage cleaning the saved property statuses
+ * and deleting the storage file.
+ */
 void StateSaver::reset()
 {
-    PropertySaver::instance(qmlEngine(this))->reset();
+    StateSaverFactory::instance(qmlEngine(this))->reset();
 }
 
 StateSaverAttachedPrivate::StateSaverAttachedPrivate()
@@ -68,8 +123,8 @@ void StateSaverAttachedPrivate::init()
     // make sure the attachee (parent) is linked to a qml context
     Q_ASSERT(qmlContext(parent));
 
-    // make sure the current QML engine has a PropertySaver
-    backend = PropertySaver::instance(qmlEngine(parent));
+    // make sure the current QML engine has a StateSaver backend
+    backend = StateSaverFactory::instance(qmlEngine(parent));
 
     // watch for component completion
     QQmlComponentAttached *attached = QQmlComponent::qmlAttachedProperties(parent);
@@ -112,7 +167,7 @@ static QString makeUuid(QObject *object)
         return QString();
     }
     QQmlData *ddata = QQmlData::get(object, false);
-    uuid += QStringLiteral("(%1,%2,%3)").arg(className(object)).arg(ddata->lineNumber).arg(ddata->columnNumber);
+    uuid += QStringLiteral("(%1:%2:%3)").arg(className(object)).arg(ddata->lineNumber).arg(ddata->columnNumber);
 
     // The component may be a delegate in a view. Therefore we need to take the "index"
     // context property into account
@@ -121,7 +176,7 @@ static QString makeUuid(QObject *object)
         uuid += QStringLiteral("[%1]").arg(indexValue.toString());
     }
 
-    return uuid.prepend(QLatin1Char('/'));
+    return uuid.prepend(QLatin1Char('_'));
 }
 bool StateSaverAttachedPrivate::buildUUId()
 {
@@ -141,6 +196,8 @@ bool StateSaverAttachedPrivate::buildUUId()
         qmlWarning(parent) << QStringLiteral("Error retrienving object path");
         return false;
     }
+    // replace separators with underscore
+    path.replace(QDir::separator(), QLatin1Char('_'));
 
     // the first uuid has the full path of the object
     uuid = makeUuid(parent);
@@ -196,14 +253,62 @@ void StateSaverAttachedPrivate::onDestroyed()
 void StateSaverAttachedPrivate::save()
 {
     if (ready && enabled && !propertyList.isEmpty() && !uuid.isEmpty() && backend) {
-        backend->savePropertiesState(parent, propertyList, uuid);
+
+        auto getter = [this](const QString &property) -> QPair<QVariant, QMetaType::Type> {
+            QQmlProperty qmlProperty(parent, property, qmlContext(parent));
+            if (!qmlProperty.isValid()) {
+                qmlWarning(parent) << QStringLiteral("Warning: invalid property \"%1\"").arg(property);
+                return StateSaverBackend::PropertyValue();
+            }
+            if (!qmlProperty.isWritable()) {
+                qmlWarning(parent) << QStringLiteral("Warning: cannot serialize read-only property \"%1\"").arg(property);
+                return StateSaverBackend::PropertyValue();
+            }
+            QVariant value = qmlProperty.read();
+            QMetaType::Type type = static_cast<QMetaType::Type>(value.type());
+            switch (type) {
+            case QMetaType::QObjectStar:
+                qmlWarning(parent) << QStringLiteral("Warning: cannot save property \"%1\" of QObject type.").arg(property);
+                return StateSaverBackend::PropertyValue();
+            case QMetaType::User:
+            {
+                // lists declared as variants are user typed, those must be converted to variant arrays
+                QVariantList list = value.toList();
+                if (!list.isEmpty()) {
+                    type = QMetaType::QVariantList;
+                }
+                break;
+            }
+            default:
+                break;
+            }
+            return StateSaverBackend::PropertyValue(value, type);
+        };
+
+        backend->saveProperties(parent, propertyList, uuid, getter);
     }
 }
 
 void StateSaverAttachedPrivate::restore()
 {
     if (ready && enabled && !propertyList.isEmpty() && !uuid.isEmpty() && backend) {
-        backend->restorePropertiesState(parent, propertyList, uuid);
+        auto setter = [this](const QString &property, const QVariant &value, int type) {
+            QQmlProperty qmlProperty(parent, property, qmlContext(parent));
+            if (qmlProperty.isValid() && qmlProperty.isWritable()) {
+                if (!value.canConvert(type)) {
+                    qmlWarning(parent) << QStringLiteral("Different type or type mismatch for property \"%1\": %2")
+                                          .arg(property)
+                                          .arg(QLatin1String(QVariant::typeToName(type)));
+                    return;
+                }
+
+                // write to the property without breaking the bindings!
+                if (!QQmlPropertyPrivate::write(qmlProperty, value, QQmlPropertyData::DontRemoveBinding)) {
+                    qmlWarning(parent) << QStringLiteral("Restoring property \"%1\" error").arg(property);
+                }
+            }
+        };
+        backend->restoreProperties(parent, propertyList, uuid, setter);
     }
 }
 
@@ -212,13 +317,13 @@ void StateSaverAttachedPrivate::toggleAutoSave()
     if (enabled) {
         Q_ASSERT(!autoSaveConnection);
         autoSaveConnection = new QMetaObject::Connection;
-        auto autoSaveSlot = [this]() {
+        auto autoSaveSlot = [this](StateSaver::SaveStatus) {
             save();
             QObject::disconnect(*autoSaveConnection);
             delete autoSaveConnection;
             autoSaveConnection = nullptr;
         };
-        *autoSaveConnection = QObject::connect(backend, &PropertySaver::saveAndExit,
+        *autoSaveConnection = QObject::connect(backend, &StateSaverBackend::saveAndExit,
                                                autoSaveSlot);
     } else if (autoSaveConnection) {
         QObject::disconnect(*autoSaveConnection);
@@ -227,14 +332,8 @@ void StateSaverAttachedPrivate::toggleAutoSave()
     }
 }
 
-/*!
- * \qmltype StateSaver
- * \ingroup bitquick_tools
- * \inqmlmodule BitQuick.Tools 1.0
- * \brief Saves the values of the attachee object properties
- *
- * TBD
- * \note Application name and organization must be set before the first state saving happens.
+/******************************************************************************
+ * Atached properties
  */
 StateSaverAttached::StateSaverAttached(QObject *parent)
     : QObject(*(new StateSaverAttachedPrivate), parent)
@@ -247,7 +346,10 @@ StateSaverAttached::~StateSaverAttached()
 }
 
 /*!
- * \qmlproperty bool StateSaver::enabled
+ * \qmlattachedproperty bool StateSaver::enabled
+ * Indicates whether saving the properties of the attachee listed in \l properties
+ * should be made or not. Developers can programatically disable the state saving
+ * to skip certain property state savings when not needed.
  */
 bool StateSaverAttachedPrivate::isEnabled() const
 {
@@ -264,7 +366,10 @@ void StateSaverAttachedPrivate::setEnabled(bool enabled)
 }
 
 /*!
- * \qmlproperty string StateSaver::properties
+ * \qmlattachedproperty string StateSaver::properties
+ * The property holds the attachee properties which should be serialized. Properties
+ * are listed with commas, and their type can be of any basic type. It supports
+ * attached properties and group properties.
  */
 QString StateSaverAttachedPrivate::properties() const
 {

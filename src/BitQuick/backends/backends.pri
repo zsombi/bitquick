@@ -18,8 +18,16 @@
 #
 # Author: Zsombor Egri <zsombor.egri@bitwelder.fi>
 
+contains(DEFINES, STATESAVER_STORAGE_JSON) {
+    HEADERS +=
+    SOURCES +=
+} else {
+    HEADERS += $$PWD/settingsstorage_p.h
+    SOURCES += $$PWD/settingsstorage.cpp
+}
+
 HEADERS += \
-    $$PWD/propertysaver_p.h
+    $$PWD/statesaverbackend_p.h
 
 SOURCES += \
-    $$PWD/propertysaver.cpp
+    $$PWD/statesaverbackend.cpp

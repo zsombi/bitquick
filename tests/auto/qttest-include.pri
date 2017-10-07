@@ -19,40 +19,26 @@
 # Author: Zsombor Egri <zsombor.egri@bitwelder.fi>
 
 TEMPLATE = app
-QT += qml quick qmltest
+QT += core gui qml quick testlib BitTestLib
 CONFIG += no_keywords
 
-# Do not use CONFIG += testcase that would add a 'make check' because it also
-# adds a 'make install' that installs the test cases, which we do not want.
-# Instead add a 'make check' manually.
-
+# add check target by hand, same way as in qmltest-include.pri
 check.target = check
-windows {
+
+win32 {
     check.commands = "set QML2_IMPORT_PATH=$${ROOT_BUILD_DIR}/qml;"
+    check.commands += "set QT_INSTALL_BINS=$$[QT_INSTALL_BINS];"
     check.commands += $$shadowed($$_PRO_FILE_PWD_)/$${TARGET}.exe
 } else {
     check.commands = "set -e;"
     check.commands += "export QML2_IMPORT_PATH=$${ROOT_BUILD_DIR}/qml;"
+    check.commands += "export QT_INSTALL_BINS=$$[QT_INSTALL_BINS];"
+    macx {
+        check.commands += "export DYLD_LIBRARY_PATH=$${ROOT_BUILD_DIR}/lib;"
+        check.commands += $$shadowed($$_PRO_FILE_PWD_)/$${TARGET}.app/Contents/MacOS/$${TARGET}
+    } else: unix {
+        check.commands += $$shadowed($$_PRO_FILE_PWD_)/$${TARGET}
+    }
 }
 
-for(TEST, TESTS) {
-  macx {
-    _test_command = $$shadowed($$_PRO_FILE_PWD_)/$${TARGET}.app/Contents/MacOS/$${TARGET}
-  } else: win32 {
-    _test_command = $$shadowed($$_PRO_FILE_PWD_)/$${TARGET}.exe
-  } else: unix {
-    _test_command = $$shadowed($$_PRO_FILE_PWD_)/$${TARGET}
-  }
-
-  _check_command = $$_test_command -import $${ROOT_BUILD_DIR}/qml -input $${_PRO_FILE_PWD_}/$${TEST} -maxwarnings 5000 -o $${ROOT_BUILD_DIR}/$${TEST}.xml,xunitxml -o -,txt
-
-  check.commands += $${_check_command} ";"
-
-  #add a convenience target per TEST file
-  check_name = "check_$${TEST}"
-  check_name = $$replace(check_name, "\.qml", "")
-  check_name = $$replace(check_name, "\.", "_")
-  $${check_name}.target   = $${check_name}
-  $${check_name}.commands += $${_check_command}
-  QMAKE_EXTRA_TARGETS+=$${check_name}
-}
+check.commands += -maxwarnings 5000 -o $${ROOT_BUILD_DIR}/$${TEST}.xml,xunitxml -o -,txt

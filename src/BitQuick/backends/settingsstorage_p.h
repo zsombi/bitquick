@@ -20,46 +20,35 @@
  * Author: Zsombor Egri <zsombor.egri@bitwelder.fi>
  */
 
-#ifndef PROPERTYSAVER_P_H
-#define PROPERTYSAVER_P_H
+#ifndef SettingsStorage_P_H
+#define SettingsStorage_P_H
 
 #include <QtCore/QObject>
 #include <QtCore/QString>
 #include <QtCore/QStringList>
 #include <QtQuick/QQuickItem>
 #include <QtCore/QSettings>
+#include "statesaverbackend_p.h"
 
 class QQmlEngine;
 
 namespace BitQuick { namespace Tools {
 
-class PropertySaver : public QObject
+class SettingsStorage : public StateSaverBackend
 {
     Q_OBJECT
 
-private:
-    PropertySaver(QObject *owner = nullptr);
-    ~PropertySaver();
-
 public:
-    enum ExitReason {
-        NormalShutdown,
-        Deactivated,
-        Interrupted,
-        Terminated
-    };
-    static PropertySaver *instance(QQmlEngine *owner);
+    SettingsStorage(QObject *owner = nullptr);
+    ~SettingsStorage();
 
-    void savePropertiesState(QObject *object, const QStringList &properties, const QString &path);
-    void restorePropertiesState(QObject *object, const QStringList &properties, const QString &path);
-    void reset();
-
-Q_SIGNALS:
-    void saveAndExit();
+    void saveProperties(QObject *object, const QStringList &properties, const QString &path, ValueGetter getter) override;
+    void restoreProperties(QObject *object, const QStringList &properties, const QString &path, ValueSetter setter) override;
+    void reset() override;
+    StateSaver::SaveStatus SaveStatus() override;
 
 private Q_SLOTS:
     void misuse();
-    void triggerSave(ExitReason reason);
 
 private:
     QSettings storage;
@@ -67,4 +56,4 @@ private:
 
 }} // namespace BitQuick::Tools
 
-#endif // PROPERTYSAVER_P_H
+#endif // SettingsStorage_P_H

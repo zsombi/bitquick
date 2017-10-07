@@ -52,16 +52,34 @@ private:
 class BITQUICK_EXPORT StateSaver : public QObject
 {
     Q_OBJECT
-
+    Q_PROPERTY(QString applicationName READ applicationName WRITE setApplicationName NOTIFY applicationNameChanged)
+    Q_PROPERTY(SaveStatus lastSaveStatus READ lastSaveStatus NOTIFY lastSaveStatusChanged)
 public:
+    enum class SaveStatus : int {
+        Undefined = -1,
+        Normal,
+        Deactivated,
+        Interrupted,
+        Terminated
+    };
+    Q_ENUM(SaveStatus)
+
     StateSaver(QObject *parent = nullptr);
     static StateSaverAttached *qmlAttachedProperties(QObject *owner)
     {
         return new StateSaverAttached(owner);
     }
 
+    QString applicationName() const;
+    void setApplicationName(const QString &name);
+    SaveStatus lastSaveStatus() const;
+
 public Q_SLOTS:
     void reset();
+
+Q_SIGNALS:
+    void applicationNameChanged();
+    void lastSaveStatusChanged();
 };
 
 }} // namespace BitQuick::Tools

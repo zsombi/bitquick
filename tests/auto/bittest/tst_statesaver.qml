@@ -133,6 +133,33 @@ Item {
             }
         }
 
+        function test_arrays_data() {
+            return [
+                        {tag: "integers", property: "intList", array: [10, 0]},
+                        {tag: "to string", property: "intList", array: ["apple", "pear", "plum"]},
+                    ];
+        }
+        function test_arrays(data) {
+            loader.source = "Arrays.qml"
+            tryCompare(loader, "status", Loader.Ready, 1000, "file not found");
+
+            verify(loader.item[data.property].length != data.array.length);
+            // change it
+            loader.item[data.property] = data.array;
+
+            // reload it
+            deadSpy.target = loader.item.Component;
+            loader.source = "";
+            deadSpy.wait();
+            loader.source = "Arrays.qml";
+            tryVerify(function () { return loader.item != null}, 1000);
+
+            compare(loader.item[data.property].length, data.array.length);
+            for (var i in data.array.length) {
+                compare(loader.item[data.property][i], data.array[i]);
+            }
+        }
+
         function test_unsupported_values_data() {
             return [
                 {tag: "object", property: "object", value: testItem, message: "QML UnsupportedTypes: Warning: cannot save property \"object\" of QObject type."},

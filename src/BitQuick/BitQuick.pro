@@ -18,9 +18,9 @@
 #
 # Author: Zsombor Egri <zsombor.egri@bitwelder.fi>
 
-TARGET=BitQuick
-TEMPLATE=lib
-VERSION = 0.1.0
+TARGET = BitQuick
+TEMPLATE = lib
+VERSION = 1.0.0
 
 QT += core-private qml quick qml-private quick-private
 

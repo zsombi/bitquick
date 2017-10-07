@@ -30,7 +30,7 @@
  #e.g. "someheader.h" => "SomeType"
  "bitquickglobals.h" => "BitQuickGlobals",
  "bitquicktoolsmodule.h" => "BitQuickToolsModule",
-# "bittest.h" => "BitTest",
+ "bittest.h" => "BitTest",
 );
 
 # Module dependencies.
