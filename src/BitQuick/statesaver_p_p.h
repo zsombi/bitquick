@@ -41,13 +41,14 @@ public:
     void setEnabled(bool enabled);
     QString properties() const;
     void setProperties(const QString &properties);
+    StateSaver::SaveScope scope() const;
+    void setScope(StateSaver::SaveScope scope);
 
     // functions
     void init();
     bool buildUUId();
     void onCompleted();
-    void onDestroyed();
-    void save();
+    void save(StateSaver::SaveStatus reason);
     void restore();
     void toggleAutoSave();
 
@@ -58,6 +59,7 @@ public:
     QMetaObject::Connection *autoSaveConnection{nullptr};
     QMetaObject::Connection *completedConnection{nullptr};
     QMetaObject::Connection *destroyedConnection{nullptr};
+    StateSaver::SaveScope saveScope;
     bool enabled:1;
     bool ready:1;
 };

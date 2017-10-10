@@ -24,15 +24,12 @@ import QtQuick 2.9
 import BitQuick.Tools 1.0
 
 Item {
-//    property var boolArray: [false, false]
-//    property var intArray: [1, 2]
-//    property var realArray: [10.1, 20.2]
     property var stringArray: ["false", "false"]
     property int runCount: 0
     id: testItem
     objectName: "testItem"
-//    StateSaver.properties: "boolArray, intArray, realArray, stringArray, runCount"
     StateSaver.properties: "stringArray, runCount"
+    StateSaver.enabled: runCount < 2
 
     Timer {
         id: autoClose
@@ -44,7 +41,8 @@ Item {
         id: saver
         applicationName: "NormalClose"
         Component.onDestruction: {
-            if (testItem.runCount >= 2) {
+            if (testItem.runCount > 1) {
+                console.log("RESET");
                 saver.reset();
             }
         }

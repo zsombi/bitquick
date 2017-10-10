@@ -84,29 +84,29 @@ Item {
         // test one property at a time
         function test_save_supported_values_data() {
             return [
-                {tag: "int", property: "intProperty", value: 100},
-                {tag: "bool", property: "boolProperty", value: true},
-                {tag: "real", property: "realProperty", value: 123.45},
-                {tag: "double", property: "doubleProperty", value: 98765.4321},
-                {tag: "string", property: "stringProperty", value: "BitQuick is really quick"},
-                {tag: "url", property: "urlProperty", value: Qt.resolvedUrl("NoParentId.qml")},
-                {tag: "date", property: "dateProperty", value: new Date(2015, 10, 2)},
-                {tag: "point", property: "pointProperty", value: Qt.point(-10, -20)},
-                {tag: "rect", property: "rectProperty", value: Qt.rect(-10, -20, 50, 80)},
-                {tag: "size", property: "sizeProperty", value: Qt.size(10, 40)},
-                {tag: "color", property: "colorProperty", value: "#00ff00"},
-                {tag: "font", property: "fontProperty", value: Qt.font({family: "Arial"})},
-                {tag: "vector2d", property: "vector2dProperty", value: Qt.vector2d(3, 4)},
-                {tag: "vector3d", property: "vector3dProperty", value: Qt.vector3d(4, 5, 6)},
-                {tag: "vector4d", property: "vector4dProperty", value: Qt.vector4d(5, 6, 7, 8)},
-                {tag: "quaternion", property: "quaternionProperty", value: Qt.quaternion(3, 2, 1, 0.5)},
-                {tag: "matrix4x4", property: "matrix4x4Property", value: Qt.matrix4x4(16,15,14,13,12,11,10,9,8,7,6,5,7,3,2,1)},
-                {tag: "group", group: "groupProperty", property: "width", value: 100},
-                {tag: "enum", property: "horizontalAlignment", value: Text.AlignRight},
+                {tag: "int", document: "SupportedTypes.qml", property: "intProperty", value: 100},
+                {tag: "bool", document: "SupportedTypes.qml", property: "boolProperty", value: true},
+                {tag: "real", document: "SupportedTypes.qml", property: "realProperty", value: 123.45},
+                {tag: "double", document: "SupportedTypes.qml", property: "doubleProperty", value: 98765.4321},
+                {tag: "string", document: "SupportedTypes.qml", property: "stringProperty", value: "BitQuick is really quick"},
+                {tag: "url", document: "SupportedTypes.qml", property: "urlProperty", value: Qt.resolvedUrl("NoParentId.qml")},
+                {tag: "date", document: "SupportedTypes.qml", property: "dateProperty", value: new Date(2015, 10, 2)},
+                {tag: "point", document: "SupportedTypes.qml", property: "pointProperty", value: Qt.point(-10, -20)},
+                {tag: "rect", document: "SupportedTypes.qml", property: "rectProperty", value: Qt.rect(-10, -20, 50, 80)},
+                {tag: "size", document: "SupportedTypes.qml", property: "sizeProperty", value: Qt.size(10, 40)},
+                {tag: "color", document: "SupportedTypes.qml", property: "colorProperty", value: "#00ff00"},
+                {tag: "font", document: "SupportedTypes.qml", property: "fontProperty", value: Qt.font({family: "Arial"})},
+                {tag: "vector2d", document: "SupportedTypes.qml", property: "vector2dProperty", value: Qt.vector2d(3, 4)},
+                {tag: "vector3d", document: "SupportedTypes.qml", property: "vector3dProperty", value: Qt.vector3d(4, 5, 6)},
+                {tag: "vector4d", document: "SupportedTypes.qml", property: "vector4dProperty", value: Qt.vector4d(5, 6, 7, 8)},
+                {tag: "quaternion", document: "SupportedTypes.qml", property: "quaternionProperty", value: Qt.quaternion(3, 2, 1, 0.5)},
+                {tag: "matrix4x4", document: "SupportedTypes.qml", property: "matrix4x4Property", value: Qt.matrix4x4(16,15,14,13,12,11,10,9,8,7,6,5,7,3,2,1)},
+                {tag: "group", document: "SupportedTypes.qml", group: "groupProperty", property: "width", value: 100},
+                {tag: "enum", document: "SupportedTypes.qml", property: "horizontalAlignment", value: Text.AlignRight},
             ];
         }
         function test_save_supported_values(data) {
-            loader.source = "SupportedTypes.qml";
+            loader.source = data.document;
             tryCompare(loader, "status", Loader.Ready, 1000, "file not found");
 
             verify(loader.item[data.property] != data.value);
@@ -122,7 +122,7 @@ Item {
             deadSpy.target = loader.item.Component;
             loader.source = "";
             deadSpy.wait();
-            loader.source = "SupportedTypes.qml";
+            loader.source = data.document;
             tryVerify(function () { return loader.item != null}, 1000);
 
             if (data.group) {
@@ -133,30 +133,58 @@ Item {
             }
         }
 
-        function test_arrays_data() {
+        // use ListView attached properties
+        function test_attached_property_data() {
             return [
-                        {tag: "integers", property: "intList", array: [10, 0]},
-                        {tag: "to string", property: "intList", array: ["apple", "pear", "plum"]},
-                    ];
+                {tag: "attached", document: "Attached.qml", item: "delegate2", property: "delayRemove", value: false},
+            ];
         }
-        function test_arrays(data) {
-            loader.source = "Arrays.qml"
+        function test_attached_property(data) {
+            loader.source = data.document;
             tryCompare(loader, "status", Loader.Ready, 1000, "file not found");
 
-            verify(loader.item[data.property].length != data.array.length);
+            var item = findChild(loader.item, data.item);
+            verify(item);
+            verify(item.ListView[data.property] != data.value);
+            item.ListView[data.property] = data.value;
+
+            // unload document, and then reload
+            deadSpy.target = loader.item.Component;
+            loader.source = "";
+            deadSpy.wait();
+            loader.source = data.document;
+            tryVerify(function () { return loader.item != null}, 1000);
+
+            item = findChild(loader.item, data.item);
+            verify(item);
+            compare(item.ListView[data.property], data.value);
+        }
+
+        function test_variadic_data() {
+            return [
+                {tag: "integers", document: "Arrays.qml", property: "variadic", value: [10, 0]},
+                {tag: "to string", document: "Arrays.qml", property: "variadic", value: ["apple", "pear", "plum"]},
+            ];
+        }
+        function test_variadic(data) {
+            loader.source = data.document;
+            tryCompare(loader, "status", Loader.Ready, 1000, "file not found");
+
+            print(typeof data.value)
+            verify(loader.item[data.property].length != data.value.length);
             // change it
-            loader.item[data.property] = data.array;
+            loader.item[data.property] = data.value;
 
             // reload it
             deadSpy.target = loader.item.Component;
             loader.source = "";
             deadSpy.wait();
-            loader.source = "Arrays.qml";
+            loader.source = data.document;
             tryVerify(function () { return loader.item != null}, 1000);
 
-            compare(loader.item[data.property].length, data.array.length);
-            for (var i in data.array.length) {
-                compare(loader.item[data.property][i], data.array[i]);
+            compare(loader.item[data.property].length, data.value.length);
+            for (var i in data.value.length) {
+                compare(loader.item[data.property][i], data.value[i]);
             }
         }
 

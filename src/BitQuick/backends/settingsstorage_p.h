@@ -42,10 +42,13 @@ public:
     SettingsStorage(QObject *owner = nullptr);
     ~SettingsStorage();
 
-    void saveProperties(QObject *object, const QStringList &properties, const QString &path, ValueGetter getter) override;
-    void restoreProperties(QObject *object, const QStringList &properties, const QString &path, ValueSetter setter) override;
+    void saveProperties(const QStringList &properties, const QString &path, ValueGetter getter) override;
+    void restoreProperties(const QStringList &properties, const QString &path, ValueSetter setter) override;
     void reset() override;
-    StateSaver::SaveStatus SaveStatus() override;
+
+protected:
+    void saveStatus() override;
+    void loadStatus() override;
 
 private Q_SLOTS:
     void misuse();

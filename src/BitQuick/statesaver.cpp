@@ -40,12 +40,97 @@ namespace BitQuick { namespace Tools {
  * \inqmlmodule BitQuick.Tools 1.0
  * \brief Saves the values of the attachee object properties
  *
- * TBD
- * \note Application name and organization must be set before the first state saving happens.
+ * StateSaver provides the ability to store property values in a QML application,
+ * as well as to record the reason the application was closed. These property values
+ * will be restored when they are re-created or when the application is re-launched.
+ * The property states are stored in the application's data storage folder, which is
+ * driven by the \l applicationName property. This proeprty should be assigned with
+ * a string and bindings should be avoided, as moving the state files is not supported.
+ *
+ * The properties subject of serialization must be listed in the \l properties
+ * attached property, each of them separated with commas. The values will be
+ * automatically restored on the attachee component completion, and will be saved
+ * on destruction, unless the serialization is explicitly disabled or the cause
+ * of the destruction is out of scope of the serialization. The scope is driven
+ * by the \l scope property, where SaveStatus flags are expected to be listed.
+ * The serialization can be turned off by setting \a false to \l enabled attached
+ * property.
+ *
+ * An example text editor which saves the cursor position, text and pre-edit text
+ * upon application crash would look as follows:
+ * \qml
+ * import QtQuick 2.9
+ * import BitQuick.Tools 1.0
+ *
+ * TextEdit {
+ *     id: box
+ *     // expose state saving to be driven by a property
+ *     property bool autoSave: true
+ *     StateSaver.enabled: autoSave
+ *     StateSaver.properties: "text, cursorPosition, preeditText"
+ *     StateSaver.scope: StateSaver.Interrupted | StateSaver.Terminated
+ * }
+ * \endqml
+ *
+ * StateSaver computes a unique identifier for the attachee using the component's
+ * and all its parents' \a id. If the attachee or one of its parents does not have
+ * an identifier, the attachee identification becomes impossible, and thus no state
+ * saving will happen. The following example will give error as the root element
+ * in the document does not have an identifier specified.
+ * \qml
+ * Column {
+ *     // [...]
+ *     Row {
+ *         id: row
+ *         TextInput {
+ *             id: input
+ *             StateSaver.properties: "text"
+ *         }
+ *     }
+ * }
+ * \endqml
+ *
+ * An exception to this rule is applied when the elements created dynamically are
+ * parented to a different component. An example is the Repeater's case, where the
+ * elements created from the delegate are parented to the Repeater's parent. In
+ * this case the Repeater does not need an identifier.
+ * \qml
+ * Item {
+ *     id: root
+ *     Repeater {
+ *         model: 10
+ *         Rectangle {
+ *             id: rect
+ *             width: 20
+ *             height: 100
+ *             StateSaver.properties: "width, height"
+ *         }
+ *     }
+ * }
+ * \endqml
+ * ListView and GridView, despite of having similarities in functionalities need
+ * an identifier, as these components are parenting the elements created from the
+ * delegate into a content item, which is a child of the view.
+ *
+ * StateSaver can save all basic types, group properties, attached properties and
+ * arrays. Objects, lists of objects or variants containing any of these are not
+ * supported.
  */
 StateSaver::StateSaver(QObject *parent)
     : QObject(parent)
 {
+}
+
+StateSaverAttached *StateSaver::qmlAttachedProperties(QObject *owner)
+{
+    return new StateSaverAttached(owner);
+}
+
+void StateSaver::componentComplete()
+{
+    // if name wasn't set in QML, we may still have it set in c++ code
+    // in which case the StateSaver backend may not have been called yet
+    StateSaverFactory::instance(qmlEngine(this));
 }
 
 /*!
@@ -66,7 +151,6 @@ void StateSaver::setApplicationName(const QString &name)
     Q_EMIT applicationNameChanged();
     // make sure we create the statesaver backend instance!
     StateSaverFactory::instance(qmlEngine(this));
-    qDebug() << "APPNAME=" << name;
 }
 
 /*!
@@ -77,14 +161,13 @@ void StateSaver::setApplicationName(const QString &name)
  * \list
  * \li Undefined
  * \li Normal
- * \li Deactivated
  * \li Interrupted
  * \li Terminated
  * \endlist
  */
 StateSaver::SaveStatus StateSaver::lastSaveStatus() const
 {
-    return StateSaverFactory::instance(qmlEngine(this))->SaveStatus();
+    return StateSaverFactory::instance(qmlEngine(this))->lastSaveStatus();
 }
 
 /*!
@@ -98,7 +181,8 @@ void StateSaver::reset()
 }
 
 StateSaverAttachedPrivate::StateSaverAttachedPrivate()
-    : enabled(false)
+    : saveScope(StateSaver::SaveStatus::Normal | StateSaver::SaveStatus::Terminated | StateSaver::SaveStatus::Interrupted)
+    , enabled(false)
     , ready(false)
 {
 }
@@ -116,6 +200,11 @@ StateSaverAttachedPrivate::~StateSaverAttachedPrivate()
         delete destroyedConnection;
         destroyedConnection = nullptr;
     }
+    if (autoSaveConnection) {
+        QObject::disconnect(*autoSaveConnection);
+        delete autoSaveConnection;
+        autoSaveConnection = nullptr;
+    }
 }
 
 void StateSaverAttachedPrivate::init()
@@ -131,11 +220,6 @@ void StateSaverAttachedPrivate::init()
     completedConnection = new QMetaObject::Connection;
     *completedConnection = QObject::connect(attached, &QQmlComponentAttached::completed,
                                             std::bind(&StateSaverAttachedPrivate::onCompleted, this));
-
-    // also for component destruction, as at that phase we may still have the QML context available
-    destroyedConnection = new QMetaObject::Connection;
-    *destroyedConnection = QObject::connect(attached, &QQmlComponentAttached::destruction,
-                                            std::bind(&StateSaverAttachedPrivate::onDestroyed, this));
 
     // finally enable it
     setEnabled(true);
@@ -239,20 +323,9 @@ void StateSaverAttachedPrivate::onCompleted()
     completedConnection = nullptr;
 }
 
-void StateSaverAttachedPrivate::onDestroyed()
+void StateSaverAttachedPrivate::save(StateSaver::SaveStatus reason)
 {
-    save();
-    ready = false;
-
-    // clean connection
-    QObject::disconnect(*destroyedConnection);
-    delete destroyedConnection;
-    destroyedConnection = nullptr;
-}
-
-void StateSaverAttachedPrivate::save()
-{
-    if (ready && enabled && !propertyList.isEmpty() && !uuid.isEmpty() && backend) {
+    if (ready && enabled && !propertyList.isEmpty() && !uuid.isEmpty() && backend && saveScope.testFlag(reason)) {
 
         auto getter = [this](const QString &property) -> QPair<QVariant, QMetaType::Type> {
             QQmlProperty qmlProperty(parent, property, qmlContext(parent));
@@ -285,7 +358,21 @@ void StateSaverAttachedPrivate::save()
             return StateSaverBackend::PropertyValue(value, type);
         };
 
-        backend->saveProperties(parent, propertyList, uuid, getter);
+        backend->saveProperties(propertyList, uuid, getter);
+    }
+
+    // the save slot is called once, either by a normal component destruction,
+    // or as result of StateSaverBackend::saveAndExit signal, therefore we
+    // clean all the connections we have to make sure it won;t be called again
+    if (destroyedConnection) {
+        QObject::disconnect(*destroyedConnection);
+        delete destroyedConnection;
+        destroyedConnection = nullptr;
+    }
+    if (autoSaveConnection) {
+        QObject::disconnect(*autoSaveConnection);
+        delete autoSaveConnection;
+        autoSaveConnection = nullptr;
     }
 }
 
@@ -308,27 +395,34 @@ void StateSaverAttachedPrivate::restore()
                 }
             }
         };
-        backend->restoreProperties(parent, propertyList, uuid, setter);
+        backend->restoreProperties(propertyList, uuid, setter);
     }
 }
 
+// toggles autosave depending on the scope declared
 void StateSaverAttachedPrivate::toggleAutoSave()
 {
     if (enabled) {
+        Q_ASSERT(!destroyedConnection);
+        QQmlComponentAttached *attached = QQmlComponent::qmlAttachedProperties(parent);
+        destroyedConnection = new QMetaObject::Connection;
+        *destroyedConnection = QObject::connect(attached, &QQmlComponentAttached::destruction,
+                                                std::bind(&StateSaverAttachedPrivate::save, this, StateSaver::SaveStatus::Normal));
         Q_ASSERT(!autoSaveConnection);
         autoSaveConnection = new QMetaObject::Connection;
-        auto autoSaveSlot = [this](StateSaver::SaveStatus) {
-            save();
+        *autoSaveConnection = QObject::connect(backend, &StateSaverBackend::saveAndExit,
+                                               std::bind(&StateSaverAttachedPrivate::save, this, std::placeholders::_1));
+    } else {
+        if (autoSaveConnection) {
             QObject::disconnect(*autoSaveConnection);
             delete autoSaveConnection;
             autoSaveConnection = nullptr;
-        };
-        *autoSaveConnection = QObject::connect(backend, &StateSaverBackend::saveAndExit,
-                                               autoSaveSlot);
-    } else if (autoSaveConnection) {
-        QObject::disconnect(*autoSaveConnection);
-        delete autoSaveConnection;
-        autoSaveConnection = nullptr;
+        }
+        if (destroyedConnection) {
+            QObject::disconnect(*destroyedConnection);
+            delete destroyedConnection;
+            destroyedConnection = nullptr;
+        }
     }
 }
 
@@ -388,6 +482,34 @@ void StateSaverAttachedPrivate::setProperties(const QString &properties)
     Q_EMIT q_func()->propertiesChanged();
     // restore property values if there were any saved
     restore();
+}
+
+/*!
+ * \qmlattachedproperty flags StateSaver::scope
+ * The property specifies the state saving scope, those flags which are driving the
+ * state saving. By default all state saving reasons are enabled. You can exclude
+ * save reasons by not listing in the enumeration. The following code will save the
+ * status of the listed TextInput properties only if the application is interrupted
+ * or terminated.
+ * \qml
+ * TextInput {
+ *     id: input
+ *     StateSaver.scope: StateSaver.Interrupted | StateSaver.Terminated
+ *     StateSaver.properties: "text, cursorPosition"
+ * }
+ * \endqml
+ */
+StateSaver::SaveScope StateSaverAttachedPrivate::scope() const
+{
+    return saveScope;
+}
+void StateSaverAttachedPrivate::setScope(StateSaver::SaveScope scope)
+{
+    if (saveScope == scope) {
+        return;
+    }
+    saveScope = scope;
+    Q_EMIT q_func()->scopeChanged();
 }
 
 }} // namespace BitQuick::Tools

@@ -45,13 +45,25 @@ public:
     explicit StateSaverBackend(QObject *parent = nullptr);
     virtual ~StateSaverBackend();
 
-    virtual void saveProperties(QObject *object, const QStringList &properties, const QString &path, ValueGetter getter) = 0;
-    virtual void restoreProperties(QObject *object, const QStringList &properties, const QString &path, ValueSetter setter) = 0;
+    virtual void saveProperties(const QStringList &properties, const QString &path, ValueGetter getter) = 0;
+    virtual void restoreProperties(const QStringList &properties, const QString &path, ValueSetter setter) = 0;
     virtual void reset() = 0;
-    virtual StateSaver::SaveStatus SaveStatus() = 0;
+    inline StateSaver::SaveStatus lastSaveStatus()
+    {
+        return m_saveStatus;
+    }
+
+protected:
+    StateSaver::SaveStatus m_saveStatus{StateSaver::SaveStatus::Undefined};
+
+    virtual void saveStatus() {}
+    virtual void loadStatus() {}
 
 Q_SIGNALS:
     void saveAndExit(StateSaver::SaveStatus status = StateSaver::SaveStatus::Normal);
+
+private:
+    Q_SLOT void onAboutToQuit();
 };
 
 class StateSaverFactory

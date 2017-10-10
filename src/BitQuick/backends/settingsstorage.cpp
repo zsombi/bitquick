@@ -27,8 +27,11 @@
 #include <QtGui/QGuiApplication>
 #include <QtQml/QQmlEngine>
 #include <QtQml/QQmlInfo>
-
+#include <QtCore/QLoggingCategory>
 #include <QtCore/QVariantList>
+
+Q_LOGGING_CATEGORY(logStorage, "BitQuick.StateSaver.Storage", QtWarningMsg);
+#define LOG_STORAGE     qCDebug(logStorage())
 
 namespace BitQuick { namespace Tools {
 
@@ -41,28 +44,21 @@ SettingsStorage::SettingsStorage(QObject *parent)
 {
     storage.setFallbacksEnabled(false);
     // get the application path
-    qDebug() << "STORAGE=" << storage.fileName();
+    LOG_STORAGE << "STORAGE=" << storage.fileName();
 
     // watch for application name changes to warn about misuse
     connect(QGuiApplication::instance(), &QGuiApplication::organizationNameChanged,
             this, &SettingsStorage::misuse);
     connect(QGuiApplication::instance(), &QGuiApplication::applicationNameChanged,
             this, &SettingsStorage::misuse);
-
-    // TODO: watch forced application terminations
 }
 
 SettingsStorage::~SettingsStorage()
 {
 }
 
-
-void SettingsStorage::saveProperties(QObject *object, const QStringList &properties, const QString &path, ValueGetter getter)
+void SettingsStorage::saveProperties(const QStringList &properties, const QString &path, ValueGetter getter)
 {
-    Q_UNUSED(object);
-    Q_UNUSED(properties);
-    Q_UNUSED(path);
-
     // each property is saved under a group, where the group ID is the object path
     // each property will have a type pair which will contain teh tuype of the property saved
     storage.beginGroup(path);
@@ -72,7 +68,6 @@ void SettingsStorage::saveProperties(QObject *object, const QStringList &propert
             continue;
         }
 
-        // is the value an array?
         storage.setValue(property, value.first);
         storage.setValue(property + QStringLiteral("_TYPE"), QVariant::fromValue(int(value.second)));
     }
@@ -80,12 +75,8 @@ void SettingsStorage::saveProperties(QObject *object, const QStringList &propert
     storage.sync();
 }
 
-void SettingsStorage::restoreProperties(QObject *object, const QStringList &properties, const QString &path, ValueSetter setter)
+void SettingsStorage::restoreProperties(const QStringList &properties, const QString &path, ValueSetter setter)
 {
-    Q_UNUSED(object);
-    Q_UNUSED(properties);
-    Q_UNUSED(path);
-
     storage.beginGroup(path);
     QStringList storedProperties = storage.childKeys();
 
@@ -105,9 +96,19 @@ void SettingsStorage::reset()
     QFile::remove(storage.fileName());
 }
 
-StateSaver::SaveStatus SettingsStorage::SaveStatus()
+void SettingsStorage::saveStatus()
 {
-    return StateSaver::SaveStatus::Undefined;
+    storage.beginGroup(QStringLiteral("Application"));
+    storage.setValue(QStringLiteral("LastSaveReason"), int(m_saveStatus));
+    storage.endGroup();
+    storage.sync();
+}
+
+void SettingsStorage::loadStatus()
+{
+    storage.beginGroup(QStringLiteral("Application"));
+    m_saveStatus = storage.value(QStringLiteral("LastSaveReason")).value<StateSaver::SaveStatus>();
+    storage.endGroup();
 }
 
 /******************************************************************************

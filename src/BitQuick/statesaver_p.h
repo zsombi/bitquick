@@ -26,9 +26,47 @@
 #include <QtCore/QObject>
 #include <QtCore/QString>
 #include <QtQml/QtQml>
+#include <QtQml/QQmlParserStatus>
 #include <BitQuick/BitQuickGlobals>
 
 namespace BitQuick { namespace Tools {
+
+class StateSaverAttached;
+class BITQUICK_EXPORT StateSaver : public QObject, public QQmlParserStatus
+{
+    Q_OBJECT
+    Q_INTERFACES(QQmlParserStatus)
+    Q_PROPERTY(QString applicationName READ applicationName WRITE setApplicationName NOTIFY applicationNameChanged)
+    Q_PROPERTY(SaveStatus lastSaveStatus READ lastSaveStatus NOTIFY lastSaveStatusChanged)
+public:
+    enum SaveStatus {
+        Undefined   = 0,
+        Normal      = 0x01,
+        Interrupted = 0x02,
+        Terminated  = 0x04
+    };
+    Q_ENUM(SaveStatus)
+    Q_DECLARE_FLAGS(SaveScope, SaveStatus)
+    Q_FLAG(SaveScope)
+
+    StateSaver(QObject *parent = nullptr);
+    static StateSaverAttached *qmlAttachedProperties(QObject *owner);
+
+    QString applicationName() const;
+    void setApplicationName(const QString &name);
+    SaveStatus lastSaveStatus() const;
+
+protected:
+    void classBegin() override {}
+    void componentComplete() override;
+
+public Q_SLOTS:
+    void reset();
+
+Q_SIGNALS:
+    void applicationNameChanged();
+    void lastSaveStatusChanged();
+};
 
 class StateSaverAttachedPrivate;
 class BITQUICK_EXPORT StateSaverAttached : public QObject
@@ -36,6 +74,7 @@ class BITQUICK_EXPORT StateSaverAttached : public QObject
     Q_OBJECT
     Q_PRIVATE_PROPERTY(d_func(), bool enabled READ isEnabled WRITE setEnabled NOTIFY enabledChanged)
     Q_PRIVATE_PROPERTY(d_func(), QString properties READ properties WRITE setProperties NOTIFY propertiesChanged)
+    Q_PRIVATE_PROPERTY(d_func(), StateSaver::SaveScope scope READ scope WRITE setScope NOTIFY scopeChanged)
 
 public:
     explicit StateSaverAttached(QObject *parent = nullptr);
@@ -44,42 +83,10 @@ public:
 Q_SIGNALS:
     void enabledChanged();
     void propertiesChanged();
+    void scopeChanged();
 
 private:
     Q_DECLARE_PRIVATE(StateSaverAttached)
-};
-
-class BITQUICK_EXPORT StateSaver : public QObject
-{
-    Q_OBJECT
-    Q_PROPERTY(QString applicationName READ applicationName WRITE setApplicationName NOTIFY applicationNameChanged)
-    Q_PROPERTY(SaveStatus lastSaveStatus READ lastSaveStatus NOTIFY lastSaveStatusChanged)
-public:
-    enum class SaveStatus : int {
-        Undefined = -1,
-        Normal,
-        Deactivated,
-        Interrupted,
-        Terminated
-    };
-    Q_ENUM(SaveStatus)
-
-    StateSaver(QObject *parent = nullptr);
-    static StateSaverAttached *qmlAttachedProperties(QObject *owner)
-    {
-        return new StateSaverAttached(owner);
-    }
-
-    QString applicationName() const;
-    void setApplicationName(const QString &name);
-    SaveStatus lastSaveStatus() const;
-
-public Q_SLOTS:
-    void reset();
-
-Q_SIGNALS:
-    void applicationNameChanged();
-    void lastSaveStatusChanged();
 };
 
 }} // namespace BitQuick::Tools

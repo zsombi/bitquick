@@ -29,4 +29,5 @@ SOURCES += \
     main.cpp
 
 DISTFILES += \
-    NormalClose.qml
+    NormalClose.qml \
+    AbnormalInterrupt.qml

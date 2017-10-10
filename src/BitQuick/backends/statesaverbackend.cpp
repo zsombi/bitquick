@@ -34,13 +34,22 @@ StateSaverBackend::StateSaverBackend(QObject *parent)
 {
     // connect application's save
     connect(QGuiApplication::instance(), &QGuiApplication::aboutToQuit,
-            this, std::bind(&StateSaverBackend::saveAndExit, this, StateSaver::SaveStatus::Normal));
-    // TODO: connect activation and deactivation
+            this, &StateSaverBackend::onAboutToQuit);
+    // TODO: handle SIGINT and SIGTERM
 
+    // finally load the previously stored status
+    loadStatus();
 }
 
 StateSaverBackend::~StateSaverBackend()
 {
+}
+
+void StateSaverBackend::onAboutToQuit()
+{
+    m_saveStatus = StateSaver::SaveStatus::Normal;
+    saveStatus();
+    Q_EMIT saveAndExit(m_saveStatus);
 }
 
 // a system can be launched with multiple QML engines

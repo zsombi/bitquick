@@ -37,7 +37,7 @@ class BITQUICK_EXPORT BitTest : public QQuickView
 {
     Q_OBJECT
 public:
-    BitTest(const QString& file, ResizeMode resize = SizeViewToRootObject, bool assertOnFailure = true, QWindow* parent = 0);
+    BitTest(const QString& file, ResizeMode resize = SizeViewToRootObject, bool assertOnFailure = true, QWindow* parent = nullptr);
     int warnings() const;
 
     template<class T>

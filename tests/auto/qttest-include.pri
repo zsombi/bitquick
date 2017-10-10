@@ -19,7 +19,7 @@
 # Author: Zsombor Egri <zsombor.egri@bitwelder.fi>
 
 TEMPLATE = app
-QT += core gui qml quick testlib BitTestLib
+QT += core gui qml quick testlib BitTestLib BitQuick_private
 CONFIG += no_keywords
 
 # add check target by hand, same way as in qmltest-include.pri

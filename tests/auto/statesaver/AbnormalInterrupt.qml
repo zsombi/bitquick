@@ -24,11 +24,34 @@ import QtQuick 2.9
 import BitQuick.Tools 1.0
 
 Item {
-    id: arrays
+    property int runCount: 0
+    id: testItem
+    objectName: "testItem"
+    StateSaver.properties: "runCount"
+    StateSaver.enabled: runCount < 2
 
-    property var variadic: [1, 2, 3, 4]
+    Timer {
+        id: autoClose
+        interval: 2000
+        running: false
+        onTriggered: Qt.quit();
+    }
+    StateSaver {
+        id: saver
+        applicationName: "AbnormalInterrupt"
 
-    StateSaver.properties: "variadic"
+        Component.onCompleted: console.log("lastSaveStatus=", saver.lastSaveStatus)
+        Component.onDestruction: {
+            if (testItem.runCount > 1) {
+                console.log("RESET");
+                saver.reset();
+            }
+        }
+    }
 
-    Component.onCompleted: {}
+    Component.onCompleted: {
+        autoClose.running = true
+        runCount++;
+        console.log("runCount=", runCount);
+    }
 }

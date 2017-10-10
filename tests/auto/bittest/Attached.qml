@@ -23,12 +23,20 @@
 import QtQuick 2.9
 import BitQuick.Tools 1.0
 
-Item {
-    id: arrays
+ListView {
+    id: lview
 
-    property var variadic: [1, 2, 3, 4]
-
-    StateSaver.properties: "variadic"
+    width: 100
+    height: 100
+    model: 10
+    delegate: Rectangle {
+        id: delegate
+        objectName: "delegate" + index
+        width: parent.width
+        height: 20
+        ListView.delayRemove: true
+        StateSaver.properties: "ListView.delayRemove"
+    }
 
     Component.onCompleted: {}
 }
