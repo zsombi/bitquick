@@ -39,7 +39,9 @@ public:
     explicit TestProcess(const char *qmlFile)
     {
         setProcessChannelMode(QProcess::SeparateChannels);
-        setEnvironment(QStringList() << QStringLiteral("QT_LOGGING_RULES=BitQuick.StateSaver.Storage.debug=true"));
+        QStringList env = QProcessEnvironment::systemEnvironment().toStringList();
+        env.append(QStringLiteral("QT_LOGGING_RULES=BitQuick.StateSaver.Storage.debug=true"));
+        setEnvironment(env);
         scene = QLibraryInfo::location(QLibraryInfo::BinariesPath) + QStringLiteral("/qmlscene");
         args << QStringLiteral("-I") << qgetenv("QML2_IMPORT_PATH");
         args << QStringLiteral("%1/%2").arg(TEST_DIR).arg(qmlFile);

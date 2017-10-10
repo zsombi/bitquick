@@ -33,6 +33,9 @@ win32 {
     check.commands = "set -e;"
     check.commands += "export QML2_IMPORT_PATH=$${ROOT_BUILD_DIR}/qml;"
     check.commands += "export QT_INSTALL_BINS=$$[QT_INSTALL_BINS];"
+    check.commands += "export QT_QPA_PLATFORM=offscreen;"
+    check.commands += "export QMLSCENE_DEVICE=softwarecontext;"
+    check.commands += "export QML_DISABLE_DISK_CACHE=true;"
     macx {
         check.commands += "export DYLD_LIBRARY_PATH=$${ROOT_BUILD_DIR}/lib;"
         check.commands += "export DYLD_FRAMEWORK_PATH=$${ROOT_BUILD_DIR}/lib;"
