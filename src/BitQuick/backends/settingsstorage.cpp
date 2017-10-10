@@ -23,7 +23,6 @@
 #include "settingsstorage_p.h"
 #include <QtCore/QVariant>
 #include <QtCore/QMetaType>
-#include <QtCore/QDebug>
 #include <QtGui/QGuiApplication>
 #include <QtQml/QQmlEngine>
 #include <QtQml/QQmlInfo>

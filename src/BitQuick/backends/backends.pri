@@ -18,16 +18,16 @@
 #
 # Author: Zsombor Egri <zsombor.egri@bitwelder.fi>
 
-contains(DEFINES, STATESAVER_STORAGE_JSON) {
-    HEADERS +=
-    SOURCES +=
-} else {
-    HEADERS += $$PWD/settingsstorage_p.h
-    SOURCES += $$PWD/settingsstorage.cpp
-}
-
-HEADERS += \
+HEADERS += $$PWD/settingsstorage_p.h \
     $$PWD/statesaverbackend_p.h
 
-SOURCES += \
+SOURCES += $$PWD/settingsstorage.cpp \
     $$PWD/statesaverbackend.cpp
+
+macx|unix {
+    HEADERS += \
+        $$PWD/unixsighandler_p.h
+
+    SOURCES += \
+        $$PWD/unixsighandler.cpp
+}

@@ -25,7 +25,7 @@
 #include <QtQml/QQmlEngine>
 #include <QtQml/QQmlInfo>
 
-#include "settingsstorage_p.h"
+#include "backends/settingsstorage_p.h"
 
 namespace BitQuick { namespace Tools {
 
@@ -35,10 +35,12 @@ StateSaverBackend::StateSaverBackend(QObject *parent)
     // connect application's save
     connect(QGuiApplication::instance(), &QGuiApplication::aboutToQuit,
             this, &StateSaverBackend::onAboutToQuit);
-    // TODO: handle SIGINT and SIGTERM
 
-    // finally load the previously stored status
-    loadStatus();
+    // handle SIGINT and SIGTERM
+    connect(StateSaverFactory::termination(), &AbnormalTerminationHandler::terminated,
+            this, &StateSaverBackend::onSignalTriggered);
+    StateSaverFactory::termination()->watchTerminationSignal(StateSaver::SaveStatus::Interrupted);
+    StateSaverFactory::termination()->watchTerminationSignal(StateSaver::SaveStatus::Terminated);
 }
 
 StateSaverBackend::~StateSaverBackend()
@@ -52,6 +54,21 @@ void StateSaverBackend::onAboutToQuit()
     Q_EMIT saveAndExit(m_saveStatus);
 }
 
+void StateSaverBackend::onSignalTriggered(StateSaver::SaveStatus reason)
+{
+    // disconnect aboutToQuit first as we'll quit after we save the state
+    disconnect(QGuiApplication::instance(), &QGuiApplication::aboutToQuit,
+               this, &StateSaverBackend::onAboutToQuit);
+
+    m_saveStatus = reason;
+    saveStatus();
+    Q_EMIT saveAndExit(m_saveStatus);
+    QGuiApplication::quit();
+}
+
+/******************************************************************************
+ * Factory
+ */
 // a system can be launched with multiple QML engines
 // therefore each singleton backend must be linked to the QML engine!
 StateSaverBackend *StateSaverFactory::instance(QQmlEngine *engine)

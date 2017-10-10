@@ -37,7 +37,7 @@ class BITQUICK_EXPORT StateSaver : public QObject, public QQmlParserStatus
     Q_OBJECT
     Q_INTERFACES(QQmlParserStatus)
     Q_PROPERTY(QString applicationName READ applicationName WRITE setApplicationName NOTIFY applicationNameChanged)
-    Q_PROPERTY(SaveStatus lastSaveStatus READ lastSaveStatus NOTIFY lastSaveStatusChanged)
+    Q_PROPERTY(BitQuick::Tools::StateSaver::SaveStatus lastSaveStatus READ lastSaveStatus NOTIFY lastSaveStatusChanged)
 public:
     enum SaveStatus {
         Undefined   = 0,
@@ -74,7 +74,7 @@ class BITQUICK_EXPORT StateSaverAttached : public QObject
     Q_OBJECT
     Q_PRIVATE_PROPERTY(d_func(), bool enabled READ isEnabled WRITE setEnabled NOTIFY enabledChanged)
     Q_PRIVATE_PROPERTY(d_func(), QString properties READ properties WRITE setProperties NOTIFY propertiesChanged)
-    Q_PRIVATE_PROPERTY(d_func(), StateSaver::SaveScope scope READ scope WRITE setScope NOTIFY scopeChanged)
+    Q_PRIVATE_PROPERTY(d_func(), BitQuick::Tools::StateSaver::SaveScope scope READ scope WRITE setScope NOTIFY scopeChanged)
 
 public:
     explicit StateSaverAttached(QObject *parent = nullptr);

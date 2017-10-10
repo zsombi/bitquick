@@ -30,4 +30,10 @@ SOURCES += \
 
 DISTFILES += \
     NormalClose.qml \
-    AbnormalInterrupt.qml
+    AbnormalInterrupt.qml \
+    SaveWhenQuit.qml \
+    SaveOnTerm.qml \
+    SaveOnIntr.qml \
+    SaveOnQuitAndTerm.qml \
+    SaveOnQuitAndIntr.qml \
+    SaveOnTermAndIntr.qml

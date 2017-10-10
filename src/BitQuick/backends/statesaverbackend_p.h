@@ -50,6 +50,7 @@ public:
     virtual void reset() = 0;
     inline StateSaver::SaveStatus lastSaveStatus()
     {
+        loadStatus();
         return m_saveStatus;
     }
 
@@ -63,13 +64,31 @@ Q_SIGNALS:
     void saveAndExit(StateSaver::SaveStatus status = StateSaver::SaveStatus::Normal);
 
 private:
-    Q_SLOT void onAboutToQuit();
+    void onAboutToQuit();
+    void onSignalTriggered(StateSaver::SaveStatus);
+};
+
+class AbnormalTerminationHandler : public QObject
+{
+    Q_OBJECT
+
+public:
+    explicit AbnormalTerminationHandler(QObject *parent = nullptr)
+        : QObject(parent)
+    {
+    }
+
+    virtual void watchTerminationSignal(StateSaver::SaveStatus reason) = 0;
+
+Q_SIGNALS:
+    void terminated(StateSaver::SaveStatus reason);
 };
 
 class StateSaverFactory
 {
 public:
     static StateSaverBackend *instance(QQmlEngine *engine);
+    static AbnormalTerminationHandler *termination();
 };
 
 }} // namespace BitQuick::Tools

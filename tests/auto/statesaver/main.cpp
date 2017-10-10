@@ -72,6 +72,7 @@ public:
                 stateFile.remove(QLatin1Char('"'));
             }
         }
+//        qDebug() << "LOGS:" << logs;
         return result;
     }
 
@@ -131,18 +132,18 @@ private Q_SLOTS:
         test.run();
         QVERIFY(test.waitForStarted());
         // wait a bit
-        QTest::qWait(1000);
+        QTest::qWait(500);
         // kill
         test.terminate();
         QVERIFY(test.waitForLogs());
         QCOMPARE(test.intLog(QStringLiteral("runCount")), 1);
-        QCOMPARE(test.intLog(QStringLiteral()), int(BitQuick::Tools::StateSaver::Undefined));
+        QCOMPARE(test.intLog(QStringLiteral("lastSaveStatus")), int(BitQuick::Tools::StateSaver::Undefined));
 
         // re-launch
         test.run();
         QVERIFY(test.waitForLogs());
         QCOMPARE(test.intLog(QStringLiteral("runCount")), 2);
-        QCOMPARE(test.intLog(QStringLiteral()), int(BitQuick::Tools::StateSaver::Terminated));
+        QCOMPARE(test.intLog(QStringLiteral("lastSaveStatus")), int(BitQuick::Tools::StateSaver::Terminated));
     }
 
     void test_interrupted()
@@ -156,20 +157,184 @@ private Q_SLOTS:
         test.run();
         QVERIFY(test.waitForStarted());
         // wait a bit
-        QTest::qWait(1000);
+        QTest::qWait(500);
 
         // interrupt
         // FIXME: we must use platform specific termination signaling, this works on OSX and Linux
         ::kill(test.pid(), SIGINT);
         QVERIFY(test.waitForLogs());
         QCOMPARE(test.intLog(QStringLiteral("runCount")), 1);
-        QCOMPARE(test.intLog(QStringLiteral()), int(BitQuick::Tools::StateSaver::Undefined));
+        QCOMPARE(test.intLog(QStringLiteral("lastSaveStatus")), int(BitQuick::Tools::StateSaver::Undefined));
 
         // re-launch
         test.run();
         QVERIFY(test.waitForLogs());
         QCOMPARE(test.intLog(QStringLiteral("runCount")), 2);
-        QCOMPARE(test.intLog(QStringLiteral()), int(BitQuick::Tools::StateSaver::Interrupted));
+        QCOMPARE(test.intLog(QStringLiteral("lastSaveStatus")), int(BitQuick::Tools::StateSaver::Interrupted));
+    }
+
+    void test_save_only_when_quit()
+    {
+        TestProcess test("SaveWhenQuit.qml");
+        test.run();
+        QVERIFY(test.waitForStarted());
+        QTest::qWait(500);
+
+        test.terminate();
+        QVERIFY(test.waitForLogs());
+        QCOMPARE(test.intLog("intProp"), 10);
+
+        // rerun
+        test.run();
+        QVERIFY(test.waitForLogs());
+        QCOMPARE(test.intLog("intProp"), 10);
+
+        // rerun again, this ttime the prop should be 20
+        test.run();
+        QVERIFY(test.waitForLogs());
+        QCOMPARE(test.intLog("intProp"), 20);
+
+        // and once again, but kill (SIGINT)
+        test.run();
+        QVERIFY(test.waitForStarted());
+        // wait a bit
+        QTest::qWait(500);
+
+        // interrupt
+        // FIXME: we must use platform specific termination signaling, this works on OSX and Linux
+        ::kill(test.pid(), SIGINT);
+        QVERIFY(test.waitForLogs());
+        QCOMPARE(test.intLog(QStringLiteral("intProp")), 30);
+    }
+
+    void test_save_only_on_terminate()
+    {
+        TestProcess test("SaveOnTerm.qml");
+        test.run();
+        QVERIFY(test.waitForFinished());
+
+        // reload but kill
+        test.run();
+        QVERIFY(test.waitForStarted());
+        QTest::qWait(500);
+        kill(test.pid(), SIGINT);
+        test.waitForFinished();
+
+        // reload
+        test.run();
+        test.waitForStarted();
+        QTest::qWait(500);
+        test.terminate();
+        QVERIFY(test.waitForLogs());
+        QCOMPARE(test.intLog(QStringLiteral("intProp")), 10);
+    }
+
+    void test_save_only_on_interrupted()
+    {
+        TestProcess test("SaveOnIntr.qml");
+        test.run();
+        QVERIFY(test.waitForFinished());
+
+        // reload but terminate
+        test.run();
+        test.waitForStarted();
+        QTest::qWait(500);
+        test.terminate();
+        test.waitForFinished();
+
+        // reload
+        test.run();
+        QVERIFY(test.waitForStarted());
+        QTest::qWait(500);
+        kill(test.pid(), SIGINT);
+        QVERIFY(test.waitForLogs());
+        QCOMPARE(test.intLog(QStringLiteral("intProp")), 10);
+    }
+
+    void test_save_on_quit_and_term()
+    {
+        TestProcess test("SaveOnQuitAndTerm.qml");
+        test.run();
+        QVERIFY(test.waitForLogs());
+        QCOMPARE(test.intLog(QStringLiteral("intProp")), 10);
+
+        // reload but terminate
+        test.run();
+        test.waitForStarted();
+        QTest::qWait(500);
+        test.terminate();
+        QVERIFY(test.waitForLogs());
+        QCOMPARE(test.intLog(QStringLiteral("intProp")), 20);
+
+        // reload
+        test.run();
+        QVERIFY(test.waitForStarted());
+        QTest::qWait(500);
+        kill(test.pid(), SIGINT);
+        QVERIFY(test.waitForLogs());
+        QCOMPARE(test.intLog(QStringLiteral("intProp")), 30);
+
+        // load again to see if the value changed
+        test.run();
+        QVERIFY(test.waitForLogs());
+        QCOMPARE(test.intLog(QStringLiteral("intProp")), 30);
+    }
+
+    void test_save_on_quit_and_interrupted()
+    {
+        TestProcess test("SaveOnQuitAndIntr.qml");
+        test.run();
+        QVERIFY(test.waitForLogs());
+        QCOMPARE(test.intLog(QStringLiteral("intProp")), 10);
+
+        // reload but kill
+        test.run();
+        QVERIFY(test.waitForStarted());
+        QTest::qWait(500);
+        kill(test.pid(), SIGINT);
+        QVERIFY(test.waitForLogs());
+        QCOMPARE(test.intLog(QStringLiteral("intProp")), 20);
+
+        // reload
+        test.run();
+        test.waitForStarted();
+        QTest::qWait(500);
+        test.terminate();
+        QVERIFY(test.waitForLogs());
+        QCOMPARE(test.intLog(QStringLiteral("intProp")), 30);
+
+        // load again to see if the value changed
+        test.run();
+        QVERIFY(test.waitForLogs());
+        QCOMPARE(test.intLog(QStringLiteral("intProp")), 30);
+    }
+
+    void test_save_on_term_and_interrupted()
+    {
+        TestProcess test("SaveOnTermAndIntr.qml");
+        test.run();
+        QVERIFY(test.waitForStarted());
+        QTest::qWait(500);
+        kill(test.pid(), SIGINT);
+        QVERIFY(test.waitForLogs());
+        QCOMPARE(test.intLog(QStringLiteral("intProp")), 10);
+
+        // reload
+        test.run();
+        test.waitForStarted();
+        QTest::qWait(500);
+        test.terminate();
+        QVERIFY(test.waitForLogs());
+        QCOMPARE(test.intLog(QStringLiteral("intProp")), 20);
+
+        test.run();
+        QVERIFY(test.waitForLogs());
+        QCOMPARE(test.intLog(QStringLiteral("intProp")), 30);
+
+        // load again to see if the value changed
+        test.run();
+        QVERIFY(test.waitForLogs());
+        QCOMPARE(test.intLog(QStringLiteral("intProp")), 30);
     }
 };
 
