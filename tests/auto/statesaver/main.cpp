@@ -26,6 +26,7 @@
 #include <QtCore/QProcess>
 #include <QtCore/QProcessEnvironment>
 #include <QtTest/QTest>
+#include <QtCore/QLibraryInfo>
 #include <BitTestLib/BitTest>
 #include <BitQuick/private/statesaver_p.h>
 
@@ -39,7 +40,7 @@ public:
     {
         setProcessChannelMode(QProcess::SeparateChannels);
         setEnvironment(QStringList() << QStringLiteral("QT_LOGGING_RULES=BitQuick.StateSaver.Storage.debug=true"));
-        scene = qgetenv("QTDIR") + QStringLiteral("/bin/qmlscene");
+        scene = QLibraryInfo::location(QLibraryInfo::BinariesPath) + QStringLiteral("/qmlscene");
         args << QStringLiteral("-I") << qgetenv("QML2_IMPORT_PATH");
         args << QStringLiteral("%1/%2").arg(TEST_DIR).arg(qmlFile);
     }
@@ -55,6 +56,7 @@ public:
     {
         logs.clear();
         start(scene, args);
+        QVERIFY(waitForStarted(5000));
     }
 
     bool waitForLogs(int msec = 30000)

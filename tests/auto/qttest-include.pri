@@ -35,6 +35,7 @@ win32 {
     check.commands += "export QT_INSTALL_BINS=$$[QT_INSTALL_BINS];"
     macx {
         check.commands += "export DYLD_LIBRARY_PATH=$${ROOT_BUILD_DIR}/lib;"
+        check.commands += "export DYLD_FRAMEWORK_PATH=$${ROOT_BUILD_DIR}/lib;"
         check.commands += $$shadowed($$_PRO_FILE_PWD_)/$${TARGET}.app/Contents/MacOS/$${TARGET}
     } else: unix {
         check.commands += $$shadowed($$_PRO_FILE_PWD_)/$${TARGET}
