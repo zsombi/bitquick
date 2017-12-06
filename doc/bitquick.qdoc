@@ -23,10 +23,10 @@
 /*!
  * \page bitquick.html
  * \title BitQuick - Qt Quick extension library
- * \brief Provides a set of utilities to Qt Quick applications
+ * \brief Provides a set of utilities to Qt Quick applications.
  *
  * BitQuick provides a set of components that can be used in QtQuick applications
- * along with any QtQuick controls and components. The module is based on Qt 5.8
+ * along with any QtQuick controls and components. The module is based on Qt 5.9
  * and beyond.
  *
  * \section1 QML types
@@ -34,6 +34,11 @@
  * application through the following statement:
  * \code
  * import BitQuick.Tools 1.0
+ * \endcode
+ * The \l {BitQuick Layouts QML module}{layouts module} provides dynamic runtime
+ * re-layouting facilities, which can be used by importing:
+ * \code
+ * import BitQuick.Layouts 1.0
  * \endcode
  *
  * \l {BitQuick Test QML types}{BitQuick} provides an extended test case element,

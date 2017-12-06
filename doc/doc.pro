@@ -7,4 +7,5 @@ DISTFILES += \
         bitquick.qdoc \
     configure.qdocconf \
     bitquick-test.qdoc \
-    bitquick-tools.qdoc
+    bitquick-tools.qdoc \
+    bitquick-layouts.qdoc

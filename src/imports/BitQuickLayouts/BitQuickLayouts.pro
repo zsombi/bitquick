@@ -18,31 +18,12 @@
 #
 # Author: Zsombor Egri <zsombor.egri@bitwelder.fi>
 
-TEMPLATE = subdirs
+CXX_MODULE = qml
+TARGET=BitQuickLayouts
+TARGETPATH=BitQuick/Layouts
+IMPORT_VERSION=1.0
 
-# libraries
-src_bitquick.subdir = BitQuick
-SUBDIRS += src_bitquick
+include(plugin/plugin.pri)
 
-src_bitlayouts.subdir = BitLayouts
-src_bitlayouts.depends = src_bitquick
-SUBDIRS += src_bitlayouts
+load(bitquick_qml_plugin)
 
-src_bittestlib.subdir = BitTestLib
-SUBDIRS += src_bittestlib
-
-#modules
-src_test_module.subdir = imports/Test
-src_test_module.module = sub-test-module
-src_test_module.depends = src_bitquick_tools
-SUBDIRS += src_test_module
-
-src_bitquick_tools.subdir = imports/BitQuickTools
-src_bitquick_tools.module = sub-bitquicktools-module
-src_bitquick_tools.depends = src_bitquick
-SUBDIRS += src_bitquick_tools
-
-src_bitquick_layouts.subdir = imports/BitQuickLayouts
-src_bitquick_layouts.module = sub-bitquicklayouts-module
-src_bitquick_layouts.depends = src_bitlayouts
-SUBDIRS += src_bitquick_layouts

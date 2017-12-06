@@ -1,0 +1,3 @@
+module BitQuick.Layouts
+plugin BitQuickLayouts
+classname BitQuickLayoutsPlugin
