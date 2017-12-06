@@ -20,33 +20,37 @@
  * Author: Zsombor Egri <zsombor.egri@bitwelder.fi>
  */
 
-#include <QtQml/qqml.h>
-#include "bitlayoutsmodule.h"
-#include "dynamiclayout_p.h"
+#ifndef LAYOUTCONTAINER_P_P_H
+#define LAYOUTCONTAINER_P_P_H
+
+#include <QtCore/private/qobject_p.h>
 #include "layoutcontainer_p.h"
 
 namespace BitQuick {
 
-BitLayoutsModule::BitLayoutsModule()
+class DynamicLayout;
+class LayoutContainerPrivate : public QObjectPrivate
 {
-}
+    Q_DECLARE_PUBLIC(LayoutContainer)
 
-void BitLayoutsModule::defineModule(QQmlEngine *engine, const char *uri)
-{
-    Q_UNUSED(engine);
-    Q_UNUSED(uri);
-}
+public:
+    LayoutContainerPrivate() :
+        QObjectPrivate()
+    {
+    }
+    static LayoutContainerPrivate* get(LayoutContainer *container)
+    {
+        return container->d_func();
+    }
 
-void BitLayoutsModule::registerTypes(const char *uri)
-{
-    Q_UNUSED(uri);
-    qmlRegisterType<DynamicLayout>(uri, 1, 0, "DynamicLayout");
-//    qmlRegisterType<DynamicLayoutAttached>();
-    qmlRegisterType<LayoutContainer>(uri, 1, 0, "LayoutContainer");
-}
-
-void BitLayoutsModule::undefineModule()
-{
-}
+    DynamicLayout* layout = nullptr;
+    QQmlComponent* content = nullptr;
+    int containerIndex = -1;
+    bool sealed = false;
+    bool isDefault = false;
+    bool when = false;
+};
 
 } // namespace BitQuick
+
+#endif // LAYOUTCONTAINER_P_P_H

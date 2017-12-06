@@ -31,9 +31,15 @@ DESTDIR = $${ROOT_LIBS_PATH}
 DEFINES += BITQUICK_LIBRARY
 
 HEADERS += \
-    bitlayoutsmodule.h
+    bitlayoutsmodule.h \
+    dynamiclayout_p.h \
+    dynamiclayout_p_p.h \
+    layoutcontainer_p.h \
+    layoutcontainer_p_p.h
 
 SOURCES += \
-    bitlayoutsmodule.cpp
+    bitlayoutsmodule.cpp \
+    dynamiclayout.cpp \
+    layoutcontainer.cpp
 
 load(bitquick_qt_module)

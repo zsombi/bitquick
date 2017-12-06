@@ -20,33 +20,36 @@
  * Author: Zsombor Egri <zsombor.egri@bitwelder.fi>
  */
 
-#include <QtQml/qqml.h>
-#include "bitlayoutsmodule.h"
+#ifndef DYNAMICLAYOUT_P_P_H
+#define DYNAMICLAYOUT_P_P_H
+
 #include "dynamiclayout_p.h"
-#include "layoutcontainer_p.h"
+#include <QtQuick/private/qquickitem_p.h>
 
 namespace BitQuick {
 
-BitLayoutsModule::BitLayoutsModule()
+class DynamicLayoutPrivate : public QQuickItemPrivate
 {
-}
+    Q_DECLARE_PUBLIC(DynamicLayout)
 
-void BitLayoutsModule::defineModule(QQmlEngine *engine, const char *uri)
-{
-    Q_UNUSED(engine);
-    Q_UNUSED(uri);
-}
+public:
+    explicit DynamicLayoutPrivate();
+    static DynamicLayoutPrivate *get(DynamicLayout *layout)
+    {
+        return layout->d_func();
+    }
+    static void layoutAppend(QQmlListProperty<LayoutContainer> *list, LayoutContainer* container);
 
-void BitLayoutsModule::registerTypes(const char *uri)
-{
-    Q_UNUSED(uri);
-    qmlRegisterType<DynamicLayout>(uri, 1, 0, "DynamicLayout");
-//    qmlRegisterType<DynamicLayoutAttached>();
-    qmlRegisterType<LayoutContainer>(uri, 1, 0, "LayoutContainer");
-}
+    void activateContainer(LayoutContainer* container);
+    void setDefault(LayoutContainer *container);
 
-void BitLayoutsModule::undefineModule()
-{
-}
+    QList<LayoutContainer*> layouts;
+    int currentContainer = -1;
+    int defaultContainer = -1;
+
+    QQuickItem *currentLayout = nullptr;
+};
 
 } // namespace BitQuick
+
+#endif // DYNAMICLAYOUT_P_P_H
