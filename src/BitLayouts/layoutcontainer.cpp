@@ -27,6 +27,12 @@
 
 namespace BitQuick {
 
+/*!
+ * \qmltype LayoutContainer
+ * \ingroup bitquick_layouts
+ * \inqmlmodule BitQuick.Layouts 1.0
+ * \brief Holds a given layout configuration for the DynamicLayout.
+ */
 LayoutContainer::LayoutContainer(QObject *parent)
     : QObject(*(new LayoutContainerPrivate), parent)
 {
@@ -40,6 +46,11 @@ void LayoutContainer::componentComplete()
     d_func()->sealed = true;
 }
 
+/*!
+ * \qmlproperty  bool LayoutContainer::isDefault
+ * True if the container defines the default layout. Defaults to false.
+ * \note The property cannot be changed after component completion.
+ */
 bool LayoutContainer::isDefault() const
 {
     Q_D(const LayoutContainer);
@@ -62,6 +73,10 @@ void LayoutContainer::setDefault(bool value)
     }
 }
 
+/*!
+ * \qmlproperty bool LayoutContainer::when
+ * Defines the condition when the container should be activated.
+ */
 bool LayoutContainer::when() const
 {
     Q_D(const LayoutContainer);
@@ -81,6 +96,11 @@ void LayoutContainer::setWhen(bool when)
     }
 }
 
+/*!
+ * \qmlproperty Component LayoutContainer::layout
+ * \default
+ * Defines the actual layout to be applied when the condition evaluates to true.
+ */
 QQmlComponent* LayoutContainer::layout() const
 {
     Q_D(const LayoutContainer);

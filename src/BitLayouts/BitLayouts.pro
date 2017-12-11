@@ -35,11 +35,14 @@ HEADERS += \
     dynamiclayout_p.h \
     dynamiclayout_p_p.h \
     layoutcontainer_p.h \
-    layoutcontainer_p_p.h
+    layoutcontainer_p_p.h \
+    layoutelement_p.h \
+    layoutelement_p_p.h
 
 SOURCES += \
     bitlayoutsmodule.cpp \
     dynamiclayout.cpp \
-    layoutcontainer.cpp
+    layoutcontainer.cpp \
+    layoutelement.cpp
 
 load(bitquick_qt_module)

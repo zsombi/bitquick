@@ -36,8 +36,8 @@ class BITQUICK_EXPORT DynamicLayout : public QQuickItem
     Q_OBJECT
     Q_DISABLE_COPY(DynamicLayout)
 
-    Q_PROPERTY(LayoutContainer* currentLayout READ currentLayout NOTIFY currentLayoutChanged)
-    Q_PROPERTY(QQmlListProperty<LayoutContainer> layouts READ layouts)
+    Q_PROPERTY(BitQuick::LayoutContainer* currentLayout READ currentLayout NOTIFY currentLayoutChanged)
+    Q_PROPERTY(QQmlListProperty<BitQuick::LayoutContainer> layouts READ layouts)
     Q_CLASSINFO("DefaultProperty", "layouts")
 
 public:

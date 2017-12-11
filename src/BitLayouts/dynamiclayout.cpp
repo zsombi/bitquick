@@ -30,6 +30,86 @@ DynamicLayoutPrivate::DynamicLayoutPrivate()
 {
 }
 
+/*!
+ * \qmltype DynamicLayout
+ * \ingroup bitquick_layouts
+ * \inqmlmodule BitQuick.Layouts 1.0
+ * \brief Dynamically transfers elements from one layout to the other.
+ *
+ * DynamicLayouts provides dynamic rearrangement of your application views' content
+ * without the need to reload content and loose components' status information.
+ *
+ * Each layout is defined by a layout container. The containers specify what to
+ * lay out and how. These containers can be defined in separate documents or within
+ * the DynamicLayout element.
+ *
+ * Each container has a condition property which tells when to activate the layout
+ * defined by it. When a condition is evaluated to true, its content will be loaded,
+ * and the marked element swill be transferred from the previous layout to the new
+ * one.
+ *
+ * There must be a default container specified. This can be specified by setting
+ * the container's default proeprty to true. The DynamicLayout however can have only
+ * one default container set. If there are multiple containers set as default,
+ * DynamicLayout will choose the last one set as default, and will reset the others'
+ * default status.
+ * In case none of the containers is set to default, the last container with its
+ * condition evaluating to true will be set as default. A DymanicLayout without
+ * a default container is not functional.
+ *
+ * Example:
+ * \qml
+ * import QtQuick 2.9
+ * import BitQuick.Layouts 1.0
+ *
+ * DynamicLayout {
+ *     id: layout
+ *     LayoutContainer {
+ *         default: true
+ *         Flow {
+ *             anchors.fill: parent
+ *             Repeater {
+ *                 model: 10
+ *                 Rectangle {
+ *                     width: 50
+ *                     height: 50
+ *                     color: "blue"
+ *                     LayoutElement.identifier: "element" + index
+ *                     Text {
+ *                         text: "Text#" + index
+ *                         anchors.centerIn: parent
+ *                     }
+ *                 }
+ *             }
+ *         }
+ *     }
+ *     LayoutContainer {
+ *         when: layout.width > 450
+ *         Column {
+ *             anchors.fill: parent
+ *             LayoutElement {
+ *                 identifier: "element2"
+ *                 width: parent.width
+ *                 height: 45
+ *                 color: "red"
+ *             }
+ *             LayoutElement {
+ *                 identifier: "element5"
+ *                 width: parent.width
+ *                 height: 100
+ *                 color: "lightblue"
+ *             }
+ *             LayoutElement {
+ *                 identifier: "element8"
+ *                 width: parent.width
+ *                 height: 25
+ *                 color: "green"
+ *             }
+ *         }
+ *     }
+ * }
+ * \endqml
+ */
 DynamicLayout::DynamicLayout(QQuickItem *parent)
     : QQuickItem(*(new DynamicLayoutPrivate), parent)
 {
@@ -75,9 +155,16 @@ void DynamicLayout::componentComplete()
     // Activate the default container first.
     if (d->defaultContainer >= 0) {
         d->activateContainer(d->layouts[d->defaultContainer]);
+    } else {
+        qmlWarning(this) << QStringLiteral("No default container set. DynamicLayout is not functional.");
     }
 }
 
+/*!
+ * \qmlproperty list<LayoutContainer> DynamicLayout::layouts
+ * \default
+ * The list of containers holding the layouts activated on a well defined condition.
+ */
 void DynamicLayoutPrivate::layoutAppend(QQmlListProperty<LayoutContainer> *list, LayoutContainer* container)
 {
     DynamicLayout *layout = static_cast<DynamicLayout*>(list->object);
@@ -95,6 +182,11 @@ QQmlListProperty<LayoutContainer> DynamicLayout::layouts()
                                              nullptr, nullptr, nullptr);
 }
 
+/*!
+ * \qmlproperty LayoutContainer DynamicLayout::currentLayout
+ * \readonly
+ * The property contains the current layout.
+ */
 LayoutContainer* DynamicLayout::currentLayout() const
 {
     Q_D(const DynamicLayout);

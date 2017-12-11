@@ -20,35 +20,44 @@
  * Author: Zsombor Egri <zsombor.egri@bitwelder.fi>
  */
 
-#include <QtQml/qqml.h>
-#include "bitlayoutsmodule.h"
-#include "dynamiclayout_p.h"
-#include "layoutcontainer_p.h"
+#ifndef LAYOUTELEMENT_P_P_H
+#define LAYOUTELEMENT_P_P_H
+
 #include "layoutelement_p.h"
+#include <QtCore/private/qobject_p.h>
 
 namespace BitQuick {
 
-BitLayoutsModule::BitLayoutsModule()
+class LayoutElementPrivate : public QObjectPrivate
 {
-}
+    Q_DECLARE_PUBLIC(LayoutElement)
+public:
+    explicit LayoutElementPrivate() : QObjectPrivate()
+    {}
 
-void BitLayoutsModule::defineModule(QQmlEngine *engine, const char *uri)
-{
-    Q_UNUSED(engine);
-    Q_UNUSED(uri);
-}
+    static LayoutElementPrivate* get(LayoutElement *element)
+    {
+        return element->d_func();
+    }
 
-void BitLayoutsModule::registerTypes(const char *uri)
-{
-    Q_UNUSED(uri);
-    qmlRegisterType<DynamicLayout>(uri, 1, 0, "DynamicLayout");
-    qmlRegisterType<LayoutContainer>(uri, 1, 0, "LayoutContainer");
-    qmlRegisterType<LayoutElement>(uri, 1, 0, "LayoutElement");
-    qmlRegisterType<LayoutElementAttached>();
-}
+    QString id;
+};
 
-void BitLayoutsModule::undefineModule()
+class LayoutElementAttachedPrivate : public QObjectPrivate
 {
-}
+    Q_DECLARE_PUBLIC(LayoutElement)
+public:
+    explicit LayoutElementAttachedPrivate() : QObjectPrivate()
+    {}
+
+    static LayoutElementAttachedPrivate* get(LayoutElementAttached *element)
+    {
+        return element->d_func();
+    }
+
+    QString id;
+};
 
 } // namespace BitQuick
+
+#endif // LAYOUTELEMENT_P_P_H
